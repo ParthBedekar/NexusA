@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Entry — AksharaNexus</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/entry.css" />
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading-overlay">
+    <div class="loading-logo">AksharaNexus</div>
+    <div class="spinner"></div>
+    <div class="loading-sub">Loading entry…</div>
+</div>
+
+<!-- ═══ TOP BAR ═══ -->
+<div class="editor-topbar">
+    <div class="topbar-icon">
+        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="12" height="1.5" rx="0.5"/>
+            <rect x="2" y="5.25" width="12" height="1.5" rx="0.5"/>
+            <rect x="2" y="8.5" width="8" height="1.5" rx="0.5"/>
+            <rect x="2" y="11.75" width="10" height="1.5" rx="0.5"/>
+        </svg>
+    </div>
+    <div class="topbar-meta">
+        <div class="topbar-title-row">
+            <span class="topbar-docname" id="topbar-docname">Entry title</span>
+        </div>
+        <div class="topbar-breadcrumb-row">
+            <span id="bc-civ">Civilization</span>
+            <span class="bc-sep">/</span>
+            <span id="bc-vol">Volume</span>
+            <span class="bc-sep">/</span>
+            <span id="bc-entry">Entry</span>
+        </div>
+    </div>
+    <div class="topbar-right">
+        <div class="save-status" id="save-status">
+            <div class="status-dot"></div>
+            <span>Ready</span>
+        </div>
+        <button class="btn-topbar-icon" onclick="history.back()" title="Back">&#8592;</button>
+        <button class="btn-share" id="share-btn" onclick="handleShare()">Share</button>
+    </div>
+</div>
+
+<!-- ═══ FORMAT TOOLBAR ═══ -->
+<div class="format-toolbar" id="format-toolbar">
+    <!-- Font family -->
+    <select class="toolbar-select" style="width:120px" onchange="execFmt('fontName', this.value)" title="Font">
+        <option value="'IBM Plex Sans', sans-serif">IBM Plex Sans</option>
+        <option value="'IBM Plex Serif', serif">IBM Plex Serif</option>
+        <option value="'IBM Plex Mono', monospace">IBM Plex Mono</option>
+        <option value="Georgia, serif">Georgia</option>
+        <option value="Arial, sans-serif">Arial</option>
+    </select>
+
+    <!-- Font size -->
+    <select class="toolbar-select" style="width:62px; margin-left:4px" onchange="execFmt('fontSize', this.value)" title="Size">
+        <option value="1">10</option>
+        <option value="2">12</option>
+        <option value="3" selected>14</option>
+        <option value="4">16</option>
+        <option value="5">20</option>
+        <option value="6">24</option>
+        <option value="7">32</option>
+    </select>
+
+    <div class="toolbar-sep"></div>
+
+    <button class="toolbar-btn" onclick="execFmt('bold')" title="Bold (Ctrl+B)"><b>B</b></button>
+    <button class="toolbar-btn" onclick="execFmt('italic')" title="Italic (Ctrl+I)"><i>I</i></button>
+    <button class="toolbar-btn" onclick="execFmt('underline')" title="Underline (Ctrl+U)"><u>U</u></button>
+    <button class="toolbar-btn" onclick="execFmt('strikeThrough')" title="Strikethrough" style="text-decoration:line-through">S</button>
+
+    <div class="toolbar-sep"></div>
+
+    <!-- Text color -->
+    <button class="toolbar-color-btn" title="Text color" onclick="pickTextColor()">
+        <span class="letter" id="color-letter" style="color:#1C1917">A</span>
+        <span class="swatch" id="color-swatch" style="background:#1C1917"></span>
+    </button>
+
+    <!-- Highlight -->
+    <button class="toolbar-color-btn" title="Highlight color" onclick="pickHighlight()">
+        <span class="letter" style="color:#92600A; background:#FDF3E3; padding:0 2px">A</span>
+        <span class="swatch" id="highlight-swatch" style="background:#FDE68A"></span>
+    </button>
+
+    <div class="toolbar-sep"></div>
+
+    <button class="toolbar-btn" onclick="execFmt('justifyLeft')" title="Align left">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="1" y1="3" x2="14" y2="3"/><line x1="1" y1="7" x2="10" y2="7"/><line x1="1" y1="11" x2="14" y2="11"/></svg>
+    </button>
+    <button class="toolbar-btn" onclick="execFmt('justifyCenter')" title="Center">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="1" y1="3" x2="14" y2="3"/><line x1="4" y1="7" x2="11" y2="7"/><line x1="1" y1="11" x2="14" y2="11"/></svg>
+    </button>
+    <button class="toolbar-btn" onclick="execFmt('justifyRight')" title="Align right">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="1" y1="3" x2="14" y2="3"/><line x1="5" y1="7" x2="14" y2="7"/><line x1="1" y1="11" x2="14" y2="11"/></svg>
+    </button>
+
+    <div class="toolbar-sep"></div>
+
+    <button class="toolbar-btn" onclick="execFmt('insertUnorderedList')" title="Bullet list">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="2.5" cy="4" r="1" fill="currentColor" stroke="none"/><line x1="5" y1="4" x2="14" y2="4"/><circle cx="2.5" cy="8" r="1" fill="currentColor" stroke="none"/><line x1="5" y1="8" x2="14" y2="8"/><circle cx="2.5" cy="12" r="1" fill="currentColor" stroke="none"/><line x1="5" y1="12" x2="14" y2="12"/></svg>
+    </button>
+    <button class="toolbar-btn" onclick="execFmt('insertOrderedList')" title="Numbered list">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><text x="1" y="5" font-size="4.5" fill="currentColor" stroke="none">1.</text><line x1="6" y1="4" x2="14" y2="4"/><text x="1" y="9" font-size="4.5" fill="currentColor" stroke="none">2.</text><line x1="6" y1="8" x2="14" y2="8"/></svg>
+    </button>
+    <button class="toolbar-btn" onclick="execFmt('indent')" title="Indent">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="1" y1="3" x2="14" y2="3"/><line x1="5" y1="7" x2="14" y2="7"/><line x1="1" y1="11" x2="14" y2="11"/><polyline points="1,5.5 3.5,7 1,8.5" fill="none"/></svg>
+    </button>
+    <button class="toolbar-btn" onclick="execFmt('outdent')" title="Outdent">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="1" y1="3" x2="14" y2="3"/><line x1="5" y1="7" x2="14" y2="7"/><line x1="1" y1="11" x2="14" y2="11"/><polyline points="4,5.5 1.5,7 4,8.5" fill="none"/></svg>
+    </button>
+
+    <div class="toolbar-sep"></div>
+
+    <button class="toolbar-btn" onclick="insertLink()" title="Insert link">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5.5 9.5a3.5 3.5 0 0 0 4.95 0l1.77-1.77a3.5 3.5 0 0 0-4.95-4.95l-.88.88"/><path d="M9.5 5.5a3.5 3.5 0 0 0-4.95 0L2.78 7.27a3.5 3.5 0 0 0 4.95 4.95l.88-.88"/></svg>
+    </button>
+
+    <button class="toolbar-btn" onclick="execFmt('removeFormat')" title="Clear formatting">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="3" x2="9" y2="3"/><line x1="6" y1="3" x2="6" y2="12"/><line x1="10" y1="9" x2="13" y2="12"/><line x1="13" y1="9" x2="10" y2="12"/></svg>
+    </button>
+
+    <div class="toolbar-sep"></div>
+
+    <button class="toolbar-btn" onclick="document.execCommand('undo')" title="Undo (Ctrl+Z)">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7.5A4.5 4.5 0 1 1 7.5 12"/><polyline points="2,4.5 3,7.5 6,7" fill="none"/></svg>
+    </button>
+    <button class="toolbar-btn" onclick="document.execCommand('redo')" title="Redo (Ctrl+Y)">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 7.5A4.5 4.5 0 1 0 7.5 12"/><polyline points="13,4.5 12,7.5 9,7" fill="none"/></svg>
+    </button>
+</div>
+
+<div class="editor-shell">
+
+    <!-- ═══ LEFT SIDEBAR ═══ -->
+    <aside class="left-sidebar" id="left-sidebar">
+        <div class="sidebar-toggle">
+            <button class="btn-collapse" id="btn-collapse" onclick="toggleSidebar()" title="Collapse panel">&#8592;</button>
+        </div>
+
+        <!-- Date / Period -->
+        <div class="sidebar-section" id="sb-meta">
+            <span class="sidebar-section-label">Period</span>
+            <div class="sidebar-meta-field">
+                <label for="meta-start">Start year</label>
+                <input class="sidebar-meta-input" type="number" id="meta-start"
+                       placeholder="e.g. −2600" oninput="liveYearUpdate()" />
+            </div>
+            <div class="sidebar-meta-field">
+                <label for="meta-end">End year</label>
+                <input class="sidebar-meta-input" type="number" id="meta-end"
+                       placeholder="e.g. −1900" oninput="liveYearUpdate()" />
+            </div>
+            <div class="period-display" id="period-display">
+                <span class="pd-label">Period</span>
+                <span class="pd-value" id="date-computed">—</span>
+            </div>
+        </div>
+
+        <!-- Insert blocks -->
+        <div class="sidebar-section" id="sb-blocks">
+            <span class="sidebar-section-label">Insert block</span>
+            <button class="block-type-btn" data-type="EVENT" onclick="insertBlock('EVENT')" draggable="true" ondragstart="sidebarDragStart(event,'EVENT')">
+                <span class="btn-type-dot"></span>
+                <span>
+                    <span class="btn-label">Event</span>
+                    <span class="btn-desc">Date, location, description</span>
+                </span>
+                <span class="drag-hint">&#8942;&#8942;</span>
+            </button>
+            <button class="block-type-btn" data-type="ERA" onclick="insertBlock('ERA')" draggable="true" ondragstart="sidebarDragStart(event,'ERA')">
+                <span class="btn-type-dot"></span>
+                <span>
+                    <span class="btn-label">Era</span>
+                    <span class="btn-desc">Time period &amp; overview</span>
+                </span>
+                <span class="drag-hint">&#8942;&#8942;</span>
+            </button>
+            <button class="block-type-btn" data-type="ASPECT" onclick="insertBlock('ASPECT')" draggable="true" ondragstart="sidebarDragStart(event,'ASPECT')">
+                <span class="btn-type-dot"></span>
+                <span>
+                    <span class="btn-label">Aspect</span>
+                    <span class="btn-desc">Tags &amp; thematic notes</span>
+                </span>
+                <span class="drag-hint">&#8942;&#8942;</span>
+            </button>
+            <button class="block-type-btn" data-type="IMAGE" onclick="insertBlock('IMAGE')" draggable="true" ondragstart="sidebarDragStart(event,'IMAGE')">
+                <span class="btn-type-dot"></span>
+                <span>
+                    <span class="btn-label">Image</span>
+                    <span class="btn-desc">Photo with caption</span>
+                </span>
+                <span class="drag-hint">&#8942;&#8942;</span>
+            </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="sidebar-section" id="sb-stats">
+            <span class="sidebar-section-label">Stats</span>
+            <div class="stat-row">
+                <span class="stat-label">Words</span>
+                <span class="stat-val" id="cnt-words">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Time span</span>
+                <span class="stat-val" id="cnt-span">—</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Total blocks</span>
+                <span class="stat-val" id="cnt-total">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Events</span>
+                <span class="stat-val" id="cnt-EVENT">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Eras</span>
+                <span class="stat-val" id="cnt-ERA">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Aspects</span>
+                <span class="stat-val" id="cnt-ASPECT">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Images</span>
+                <span class="stat-val" id="cnt-IMAGE">0</span>
+            </div>
+        </div>
+
+        <div class="sidebar-section" id="sb-readonly" style="display:none">
+            <span class="sidebar-section-label">Access</span>
+            <div style="font-size:0.8125rem; color:var(--faint); line-height:1.5; background:var(--bg); border:1px solid var(--rule); border-radius:var(--radius); padding:10px;">
+                Viewer — read&#8209;only
+            </div>
+        </div>
+    </aside>
+
+    <!-- ═══ CANVAS AREA ═══ -->
+    <main class="canvas-area">
+        <div class="doc-paper" id="doc-paper">
+
+            <!-- Document title -->
+            <textarea
+                    class="entry-title-input"
+                    id="entry-title"
+                    placeholder="Untitled entry…"
+                    rows="1"
+                    maxlength="200"
+            ></textarea>
+
+            <!-- Prose summary (rich text) -->
+            <div
+                    class="entry-prose"
+                    id="entry-prose"
+                    contenteditable="true"
+                    data-placeholder="Write an opening summary for this entry…"
+                    oninput="markUnsaved(); updateStats();"
+            ></div>
+
+            <!-- Blocks -->
+            <div class="canvas-blocks" id="canvas-blocks"></div>
+
+            <!-- Add block bar -->
+            <div class="add-block-bar" id="add-block-bar" style="display:none">
+                <span class="add-bar-label">Insert</span>
+                <button class="add-block-btn" data-type="EVENT"  onclick="insertBlock('EVENT')">
+                    <span class="btn-dot"></span> Event
+                </button>
+                <button class="add-block-btn" data-type="ERA"    onclick="insertBlock('ERA')">
+                    <span class="btn-dot"></span> Era
+                </button>
+                <button class="add-block-btn" data-type="ASPECT" onclick="insertBlock('ASPECT')">
+                    <span class="btn-dot"></span> Aspect
+                </button>
+                <button class="add-block-btn" data-type="IMAGE"  onclick="insertBlock('IMAGE')">
+                    <span class="btn-dot"></span> Image
+                </button>
+            </div>
+
+        </div><!-- /doc-paper -->
+    </main>
+
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Hidden color inputs -->
+<input type="color" id="text-color-picker" style="display:none" onchange="applyTextColor(this.value)" value="#1C1917">
+<input type="color" id="highlight-picker"  style="display:none" onchange="applyHighlight(this.value)"  value="#FDE68A">
+
+<script src="js/api.js"></script>
+<script>
+    // ─── Bootstrap ─────────────────────────────────────────────────────────────
+    Auth.requireAuth();
+
+    const params   = new URLSearchParams(window.location.search);
+    const civId    = params.get('civId');
+    const nodeId   = params.get('nodeId');
+    const civTitle = params.get('civTitle') || 'Civilization';
+    const volTitle = params.get('volTitle') || 'Volume';
+    if (!civId || !nodeId) window.location.href = 'dashboard.html';
+
+    const jwtRole = Auth.getRole();
+    let canEdit   = (jwtRole === 'ADMIN' || jwtRole === 'EDITOR');
+
+    let currentNode = null;
+    let blocks      = [];
+    let dragSrcId   = null;
+    let dragNewType = null; // type being dragged from sidebar
+    let saveTimer   = null;
+    let sidebarOpen = true;
+
+    // Breadcrumbs
+    document.getElementById('bc-civ').textContent   = decodeURIComponent(civTitle);
+    document.getElementById('bc-vol').textContent   = decodeURIComponent(volTitle);
+
+    // ─── Utilities ─────────────────────────────────────────────────────────────
+    const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const uid = () => 'b_' + Math.random().toString(36).slice(2,10);
+
+    function formatYear(y) {
+        if (y == null || isNaN(y)) return null;
+        return y < 0 ? `${Math.abs(y)} BCE` : `${y} CE`;
+    }
+
+    function autoResize(el) {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
+
+    // ─── Sidebar toggle ────────────────────────────────────────────────────────
+    function toggleSidebar() {
+        const sb = document.getElementById('left-sidebar');
+        sidebarOpen = !sidebarOpen;
+        sb.classList.toggle('collapsed', !sidebarOpen);
+    }
+
+    // ─── Sidebar drag-from ─────────────────────────────────────────────────────
+    function sidebarDragStart(e, type) {
+        dragNewType = type;
+        dragSrcId   = null;
+        e.dataTransfer.effectAllowed = 'copy';
+        e.stopPropagation();
+    }
+
+    // ─── Format toolbar ────────────────────────────────────────────────────────
+    function execFmt(cmd, val) {
+        document.execCommand(cmd, false, val || null);
+        document.getElementById('entry-prose').focus();
+        markUnsaved();
+    }
+
+    function pickTextColor() {
+        document.getElementById('text-color-picker').click();
+    }
+    function applyTextColor(val) {
+        document.execCommand('foreColor', false, val);
+        document.getElementById('color-swatch').style.background = val;
+        document.getElementById('color-letter').style.color = val;
+        markUnsaved();
+    }
+    function pickHighlight() {
+        document.getElementById('highlight-picker').click();
+    }
+    function applyHighlight(val) {
+        document.execCommand('hiliteColor', false, val);
+        document.getElementById('highlight-swatch').style.background = val;
+        markUnsaved();
+    }
+    function insertLink() {
+        const url = prompt('Enter URL:');
+        if (url) document.execCommand('createLink', false, url);
+        markUnsaved();
+    }
+
+    // Placeholder for contenteditable
+    const proseEl = document.getElementById('entry-prose');
+    proseEl.addEventListener('focus', () => {
+        if (!proseEl.textContent.trim()) proseEl.dataset.showPlaceholder = 'false';
+    });
+    proseEl.addEventListener('blur', () => {
+        if (!proseEl.textContent.trim()) proseEl.dataset.showPlaceholder = 'true';
+    });
+
+    // Add placeholder CSS
+    const style = document.createElement('style');
+    style.textContent = `
+    #entry-prose:empty::before {
+        content: attr(data-placeholder);
+        color: #C0BAB4;
+        pointer-events: none;
+        display: block;
+    }
+`;
+    document.head.appendChild(style);
+
+    // ─── Save status ───────────────────────────────────────────────────────────
+    function setSaveStatus(state, msg) {
+        const el = document.getElementById('save-status');
+        el.className = `save-status ${state}`;
+        el.querySelector('span').textContent = msg;
+    }
+
+    function markUnsaved() {
+        clearTimeout(saveTimer);
+        setSaveStatus('saving', 'Saving…');
+        saveTimer = setTimeout(() => doSave(), 1500);
+        updateStats();
+    }
+
+    async function doSave() {
+        if (!canEdit) return;
+        try {
+            const startYear = document.getElementById('meta-start').value;
+            const endYear   = document.getElementById('meta-end').value;
+            const title     = document.getElementById('entry-title').value.trim();
+            const prose     = document.getElementById('entry-prose').innerHTML;
+            const autoMsg   = `Updated "${title || 'entry'}" — ${new Date().toISOString()}`;
+
+            await CivAPI.updateNode(civId, nodeId, {
+                node: {
+                    nodeType:  'ENTRY',
+                    title, prose,
+                    startYear: startYear !== '' ? parseInt(startYear) : (currentNode?.data?.startYear ?? null),
+                    endYear:   endYear   !== '' ? parseInt(endYear)   : (currentNode?.data?.endYear   ?? null),
+                    blocks:    blocks.map(b => ({ id: b.id, type: b.type, data: { ...b.data } }))
+                },
+                commitMsg: autoMsg
+            });
+            setSaveStatus('saved', 'Saved');
+        } catch (err) {
+            setSaveStatus('error', 'Save failed');
+            showToast('Could not save — check your connection', 'error');
+        }
+    }
+
+    // ─── Stats ─────────────────────────────────────────────────────────────────
+    function updateStats() {
+        const prEl = document.getElementById('entry-prose');
+        const allText = [
+            document.getElementById('entry-title').value,
+            prEl.textContent || '',
+            ...blocks.map(b => Object.values(b.data).filter(v => typeof v === 'string').join(' '))
+        ].join(' ');
+        const words = allText.trim().split(/\s+/).filter(Boolean).length;
+        document.getElementById('cnt-words').textContent = words;
+        document.getElementById('cnt-total').textContent = blocks.length;
+        ['EVENT','ERA','ASPECT','IMAGE'].forEach(t =>
+            document.getElementById(`cnt-${t}`).textContent = blocks.filter(b => b.type === t).length
+        );
+    }
+
+    function liveYearUpdate() {
+        const s = parseInt(document.getElementById('meta-start').value);
+        const e = parseInt(document.getElementById('meta-end').value);
+        const el = document.getElementById('date-computed');
+        const spanEl = document.getElementById('cnt-span');
+        const fs = !isNaN(s) ? formatYear(s) : null;
+        const fe = !isNaN(e) ? formatYear(e) : null;
+        if (fs && fe) {
+            el.textContent     = `${fs} – ${fe}`;
+            spanEl.textContent = `${Math.abs(e - s).toLocaleString()} yrs`;
+        } else if (fs) {
+            el.textContent     = fs;
+            spanEl.textContent = '—';
+        } else {
+            el.textContent     = '—';
+            spanEl.textContent = '—';
+        }
+        markUnsaved();
+    }
+
+    // ─── Block defaults ────────────────────────────────────────────────────────
+    function defaultData(type) {
+        return {
+            EVENT:  { title:'', date:'', location:'', description:'' },
+            ERA:    { title:'', startYear:'', endYear:'', description:'' },
+            ASPECT: { title:'', tags:[], description:'' },
+            IMAGE:  { title:'', src:'', caption:'' }
+        }[type] || {};
+    }
+
+    function patchBlock(id, key, val) {
+        const b = blocks.find(b => b.id === id);
+        if (b) { b.data[key] = val; markUnsaved(); }
+    }
+
+    function deleteBlock(id) {
+        blocks = blocks.filter(b => b.id !== id);
+        renderCanvas(); markUnsaved();
+    }
+
+    function insertBlock(type, afterId = null) {
+        const block = { id: uid(), type, data: defaultData(type) };
+        if (afterId === null) { blocks.push(block); }
+        else {
+            const idx = blocks.findIndex(b => b.id === afterId);
+            blocks.splice(idx + 1, 0, block);
+        }
+        renderCanvas(); markUnsaved();
+        setTimeout(() => {
+            const all = document.querySelectorAll('.block-title-input');
+            if (all.length) all[all.length - 1].focus();
+        }, 40);
+    }
+
+    function reorderBlock(srcId, beforeId) {
+        if (srcId === beforeId) return;
+        const idx = blocks.findIndex(b => b.id === srcId);
+        const [b] = blocks.splice(idx, 1);
+        if (!beforeId) { blocks.push(b); }
+        else {
+            const ni = blocks.findIndex(b => b.id === beforeId);
+            blocks.splice(ni, 0, b);
+        }
+        renderCanvas(); markUnsaved();
+    }
+
+    function addTag(blockId) {
+        const tag = prompt('New tag:');
+        if (!tag?.trim()) return;
+        const b = blocks.find(b => b.id === blockId);
+        if (!Array.isArray(b.data.tags)) b.data.tags = [];
+        b.data.tags.push(tag.trim());
+        renderCanvas(); markUnsaved();
+    }
+
+    function removeTag(blockId, i) {
+        const b = blocks.find(b => b.id === blockId);
+        b.data.tags.splice(i, 1);
+        renderCanvas(); markUnsaved();
+    }
+
+    function loadImageFile(event, blockId) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => { patchBlock(blockId, 'src', e.target.result); renderCanvas(); };
+        reader.readAsDataURL(file);
+    }
+
+    function dropImageFile(event, blockId) {
+        event.preventDefault(); event.stopPropagation();
+        document.getElementById(`imgzone-${blockId}`)?.classList.remove('drag-over');
+        if (dragSrcId) return;
+        const file = event.dataTransfer.files[0];
+        if (!file?.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = e => { patchBlock(blockId, 'src', e.target.result); renderCanvas(); };
+        reader.readAsDataURL(file);
+    }
+
+    // ─── Block body HTML ───────────────────────────────────────────────────────
+    function bodyHTML(block) {
+        const id = block.id, ro = !canEdit, d = block.data;
+        switch (block.type) {
+            case 'EVENT':
+                return `
+                <div class="two-col">
+                    <div>
+                        <span class="field-label">Date / Year</span>
+                        <input class="field-input" placeholder="e.g. 2600 BCE"
+                            value="${esc(d.date||'')}" ${ro ? 'readonly' : ''}
+                            onchange="patchBlock('${id}','date',this.value)" />
+                    </div>
+                    <div>
+                        <span class="field-label">Location</span>
+                        <input class="field-input" placeholder="e.g. Mohenjo-daro"
+                            value="${esc(d.location||'')}" ${ro ? 'readonly' : ''}
+                            onchange="patchBlock('${id}','location',this.value)" />
+                    </div>
+                </div>
+                <textarea class="block-textarea" placeholder="Describe this event…" ${ro ? 'readonly' : ''}
+                    oninput="autoResize(this); patchBlock('${id}','description',this.value)"
+                    style="min-height:56px">${esc(d.description||'')}</textarea>`;
+
+            case 'ERA':
+                return `
+                <div class="two-col">
+                    <div>
+                        <span class="field-label">Start Year</span>
+                        <input class="field-input" type="number" placeholder="-3000"
+                            value="${d.startYear??''}" ${ro ? 'readonly' : ''}
+                            onchange="patchBlock('${id}','startYear',this.value)" />
+                    </div>
+                    <div>
+                        <span class="field-label">End Year</span>
+                        <input class="field-input" type="number" placeholder="-1000"
+                            value="${d.endYear??''}" ${ro ? 'readonly' : ''}
+                            onchange="patchBlock('${id}','endYear',this.value)" />
+                    </div>
+                </div>
+                <textarea class="block-textarea" placeholder="Describe this era…" ${ro ? 'readonly' : ''}
+                    oninput="autoResize(this); patchBlock('${id}','description',this.value)"
+                    style="min-height:52px">${esc(d.description||'')}</textarea>
+                <div class="era-bar"></div>`;
+
+            case 'ASPECT': {
+                const tags = Array.isArray(d.tags) ? d.tags : [];
+                return `
+                <textarea class="block-textarea" placeholder="Describe this aspect…" ${ro ? 'readonly' : ''}
+                    oninput="autoResize(this); patchBlock('${id}','description',this.value)"
+                    style="min-height:48px">${esc(d.description||'')}</textarea>
+                <div class="aspect-tag-row" id="tagrow-${id}">
+                    ${tags.map((t,i) => `
+                        <span class="aspect-tag">${esc(t)}
+                            ${canEdit ? `<button class="tag-remove" onclick="removeTag('${id}',${i})">&#215;</button>` : ''}
+                        </span>`).join('')}
+                    ${canEdit ? `<button class="tag-add" onclick="addTag('${id}')">+ tag</button>` : ''}
+                </div>`;
+            }
+
+            case 'IMAGE':
+                if (d.src) {
+                    return `
+                    <img class="image-preview" src="${d.src}" alt="${esc(d.caption||'')}" />
+                    <input class="image-caption" placeholder="Add a caption…"
+                        value="${esc(d.caption||'')}" ${ro ? 'readonly' : ''}
+                        onchange="patchBlock('${id}','caption',this.value)" />
+                    ${canEdit ? `
+                        <div class="image-replace-label">
+                            <button class="image-replace-btn">Replace image</button>
+                            <input type="file" accept="image/*" onchange="loadImageFile(event,'${id}')" />
+                        </div>` : ''}`;
+                }
+                return `
+                <div class="image-upload-zone" id="imgzone-${id}"
+                    ondragover="event.preventDefault(); event.stopPropagation(); this.classList.add('drag-over')"
+                    ondragleave="this.classList.remove('drag-over')"
+                    ondrop="dropImageFile(event,'${id}')">
+                    ${canEdit ? `<input type="file" accept="image/*" onchange="loadImageFile(event,'${id}')" />` : ''}
+                    <div class="image-upload-title">${canEdit ? 'Click or drag an image here' : 'No image uploaded'}</div>
+                    ${canEdit ? `<div class="image-upload-sub">PNG, JPG, GIF, WebP</div>` : ''}
+                </div>
+                <input class="image-caption" placeholder="Add a caption…"
+                    value="${esc(d.caption||'')}" ${ro ? 'readonly' : ''}
+                    onchange="patchBlock('${id}','caption',this.value)" />`;
+
+            default: return '';
+        }
+    }
+
+    // ─── Render canvas ─────────────────────────────────────────────────────────
+    function renderCanvas() {
+        const canvas = document.getElementById('canvas-blocks');
+        canvas.innerHTML = '';
+        blocks.forEach(block => {
+            canvas.appendChild(makeInsertZone(block.id));
+            canvas.appendChild(buildCard(block));
+        });
+        if (blocks.length) canvas.appendChild(makeInsertZone(null));
+        canvas.querySelectorAll('.block-textarea').forEach(autoResize);
+        updateStats();
+    }
+
+    function buildCard(block) {
+        const wrap = document.createElement('div');
+        wrap.className = 'block-wrap';
+
+        const card = document.createElement('div');
+        card.className = 'block-card';
+        card.dataset.type = block.type;
+
+        if (canEdit) {
+            card.draggable = true;
+            card.addEventListener('dragstart', e => {
+                dragSrcId   = block.id;
+                dragNewType = null;
+                card.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.stopPropagation();
+            });
+            card.addEventListener('dragend', () => {
+                dragSrcId = null;
+                card.classList.remove('dragging');
+            });
+        }
+
+        card.innerHTML = `
+        <div class="block-header">
+            ${canEdit ? '<span class="block-drag-handle" title="Drag to reorder">&#8942;&#8942;</span>' : ''}
+            <span class="block-type-label">${block.type}</span>
+            <input class="block-title-input"
+                placeholder="Section title…"
+                value="${esc(block.data.title||'')}"
+                ${canEdit ? '' : 'readonly'}
+                onchange="patchBlock('${block.id}','title',this.value)" />
+            ${canEdit ? `<button class="block-delete-btn" title="Remove block" onclick="deleteBlock('${block.id}')">&#10005;</button>` : ''}
+        </div>
+        <div class="block-body">${bodyHTML(block)}</div>`;
+
+        wrap.appendChild(card);
+        return wrap;
+    }
+
+    function makeInsertZone(beforeId) {
+        const iz = document.createElement('div');
+        iz.className = 'insert-zone';
+
+        const plus = document.createElement('span');
+        plus.className = 'iz-plus';
+        plus.textContent = '+';
+        iz.appendChild(plus);
+
+        iz.addEventListener('dragover', e => {
+            e.preventDefault();
+            iz.classList.add('drag-over');
+            e.dataTransfer.dropEffect = dragNewType ? 'copy' : 'move';
+        });
+        iz.addEventListener('dragleave', () => iz.classList.remove('drag-over'));
+        iz.addEventListener('drop', e => {
+            e.preventDefault();
+            iz.classList.remove('drag-over');
+            if (dragNewType) {
+                // Dropped from sidebar — insert new block
+                const block = { id: uid(), type: dragNewType, data: defaultData(dragNewType) };
+                if (!beforeId) { blocks.push(block); }
+                else {
+                    const ni = blocks.findIndex(b => b.id === beforeId);
+                    blocks.splice(ni, 0, block);
+                }
+                dragNewType = null;
+                renderCanvas(); markUnsaved();
+            } else if (dragSrcId) {
+                reorderBlock(dragSrcId, beforeId);
+            }
+        });
+        return iz;
+    }
+
+    // ─── Load entry ────────────────────────────────────────────────────────────
+    function findNode(node, id) {
+        if (!node) return null;
+        if (node.nodeId === id) return node;
+        for (const c of (node.children || [])) {
+            const r = findNode(c, id);
+            if (r) return r;
+        }
+        return null;
+    }
+
+    async function loadEntry() {
+        try {
+            const latest = await CivAPI.getLatest(civId);
+            const tree = typeof latest.serializedTree === 'string'
+                ? JSON.parse(latest.serializedTree) : latest.serializedTree;
+
+            currentNode = findNode(tree, nodeId);
+            if (!currentNode) { showToast('Entry not found', 'error'); return; }
+
+            const d = currentNode.data || {};
+
+            const titleEl = document.getElementById('entry-title');
+            titleEl.value = d.title || '';
+            autoResize(titleEl);
+            document.getElementById('topbar-docname').textContent = d.title || 'Untitled entry';
+            document.getElementById('bc-entry').textContent = d.title || 'Entry';
+
+            const prEl = document.getElementById('entry-prose');
+            prEl.innerHTML = d.prose || '';
+
+            document.getElementById('meta-start').value = d.startYear ?? '';
+            document.getElementById('meta-end').value   = d.endYear   ?? '';
+            liveYearUpdate();
+
+            blocks = Array.isArray(d.blocks)
+                ? d.blocks.map(b => ({ id: b.id || uid(), type: b.type || 'EVENT', data: b.data || {} }))
+                : [];
+
+            renderCanvas();
+
+            if (canEdit) {
+                document.getElementById('add-block-bar').style.display = 'flex';
+            } else {
+                document.getElementById('sb-readonly').style.display = 'block';
+                document.getElementById('sb-blocks').style.display   = 'none';
+                document.getElementById('format-toolbar').style.display = 'none';
+                document.getElementById('entry-title').readOnly = true;
+                prEl.contentEditable = 'false';
+                document.getElementById('meta-start').readOnly = true;
+                document.getElementById('meta-end').readOnly   = true;
+            }
+
+            setSaveStatus('saved', 'All saved');
+            setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), 400);
+
+        } catch (err) {
+            showToast(err.message || 'Failed to load entry', 'error');
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+    }
+
+    // ─── Share ─────────────────────────────────────────────────────────────────
+    function handleShare() {
+        const url = window.location.href;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(() => showToast('Link copied to clipboard', 'success'));
+        } else {
+            showToast('Copy this URL to share: ' + url, 'info');
+        }
+    }
+
+    // ─── Toast ─────────────────────────────────────────────────────────────────
+    function showToast(message, type = 'info') {
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        t.className = `toast toast-${type}`;
+        t.textContent = message;
+        c.appendChild(t);
+        setTimeout(() => {
+            t.style.transition = 'opacity 0.2s';
+            t.style.opacity = '0';
+            setTimeout(() => t.remove(), 220);
+        }, 3500);
+    }
+
+    // ─── Title input ───────────────────────────────────────────────────────────
+    document.getElementById('entry-title').addEventListener('input', function () {
+        autoResize(this);
+        const v = this.value || 'Untitled entry';
+        document.getElementById('topbar-docname').textContent = v;
+        document.getElementById('bc-entry').textContent = v;
+        markUnsaved();
+    });
+
+    // ─── Role resolution & boot ────────────────────────────────────────────────
+    async function resolveEffectiveRole() {
+        if (jwtRole === 'ADMIN') { canEdit = true; return; }
+        try {
+            const editors = await CivAPI.getEditors(civId);
+            const myEmail = Auth.getPayload()?.sub || '';
+            if (editors.some(e => (e.editor || {}).email === myEmail)) canEdit = true;
+        } catch {}
+    }
+
+    async function boot() {
+        await resolveEffectiveRole();
+        await loadEntry();
+    }
+
+    boot();
+</script>
+</body>
+</html>
