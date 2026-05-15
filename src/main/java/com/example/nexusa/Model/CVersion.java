@@ -1,7 +1,7 @@
 package com.example.nexusa.Model;
 
 
-import com.example.nexusa.Model.Enums.CommitType;
+import com.example.nexusa.Model.Enums.GlobalEnums.CommitType;
 import jakarta.persistence.*;
 import lombok.Data;
 

@@ -23,7 +23,7 @@
         public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtFilter filter) throws Exception{
             http.csrf(csrf->csrf.disable())
                     .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                    .authorizeHttpRequests(auth->auth.requestMatchers("/auth/**")
+                    .authorizeHttpRequests(auth->auth.requestMatchers("/auth/**", "/", "/*.html", "/css/**", "/js/**")
                      .permitAll().anyRequest().authenticated()).cors(c->c.configurationSource(corsConfigurationSource())).addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class);
 
 

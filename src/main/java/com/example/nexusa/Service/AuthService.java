@@ -1,19 +1,20 @@
 package com.example.nexusa.Service;
 
-import com.example.nexusa.Dto.LoginRequestDTO;
-import com.example.nexusa.Dto.RegistrationRequestDTO;
+import com.example.nexusa.Dto.GlobalDTOs.LoginRequestDTO;
+import com.example.nexusa.Dto.GlobalDTOs.RegistrationRequestDTO;
 import com.example.nexusa.Model.AdminCodes;
-import com.example.nexusa.Model.Enums.Role;
+import com.example.nexusa.Model.Enums.GlobalEnums.Role;
 import com.example.nexusa.Model.University;
 import com.example.nexusa.Model.UniversityDomain;
 import com.example.nexusa.Model.User;
-import com.example.nexusa.Repository.AdminCodeRepository;
-import com.example.nexusa.Repository.UniversityRepository;
-import com.example.nexusa.Repository.UserRepository;
+import com.example.nexusa.Repository.GlobalRepositories.AdminCodeRepository;
+import com.example.nexusa.Repository.GlobalRepositories.UniversityRepository;
+import com.example.nexusa.Repository.GlobalRepositories.UserRepository;
 import com.example.nexusa.Utility.JwtUtil;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +22,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 @Service
+@Transactional
 public class AuthService {
 
     private final UserRepository userRepository;

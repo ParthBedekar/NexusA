@@ -2,13 +2,14 @@ package com.example.nexusa.Service;
 
 import com.example.nexusa.Model.University;
 import com.example.nexusa.Model.UniversityDomain;
-import com.example.nexusa.Repository.UniversityDomainRepository;
-import com.example.nexusa.Repository.UniversityRepository;
+import com.example.nexusa.Repository.GlobalRepositories.UniversityDomainRepository;
+import com.example.nexusa.Repository.GlobalRepositories.UniversityRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import tools.jackson.databind.JsonNode;
 @Service
+@org.springframework.transaction.annotation.Transactional
 public class RorService {
     private final WebClient webClient;
     private final UniversityRepository universityRepository;

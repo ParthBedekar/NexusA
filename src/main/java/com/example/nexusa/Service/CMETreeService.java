@@ -1,11 +1,11 @@
 package com.example.nexusa.Service;
 
 import com.example.nexusa.Model.*;
-import com.example.nexusa.Model.Enums.CommitType;
-import com.example.nexusa.Repository.CVersionRepository;
-import com.example.nexusa.Repository.CivilizationRepository;
-import com.example.nexusa.Repository.EditorAssignmentRepository;
-import com.example.nexusa.Repository.UserRepository;
+import com.example.nexusa.Model.Enums.GlobalEnums.CommitType;
+import com.example.nexusa.Repository.GlobalRepositories.CVersionRepository;
+import com.example.nexusa.Repository.GlobalRepositories.CivilizationRepository;
+import com.example.nexusa.Repository.GlobalRepositories.EditorAssignmentRepository;
+import com.example.nexusa.Repository.GlobalRepositories.UserRepository;
 import org.pvb.persistenttree.api.Enums.TreeType;
 import org.pvb.persistenttree.api.NodeID;
 import org.pvb.persistenttree.api.PersistentTree;
@@ -18,8 +18,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import com.example.nexusa.Model.GlobalModels.CMENode;
 
 @Service
+@org.springframework.transaction.annotation.Transactional
 public class CMETreeService {
 
     private final TreeSerializer<String, CMENode> serializer;

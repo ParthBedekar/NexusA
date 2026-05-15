@@ -1,6 +1,6 @@
 package com.example.nexusa.Model;
 
-import com.example.nexusa.Model.Enums.Role;
+import com.example.nexusa.Model.Enums.GlobalEnums.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;

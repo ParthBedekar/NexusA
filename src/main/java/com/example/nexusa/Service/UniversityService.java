@@ -1,12 +1,13 @@
 package com.example.nexusa.Service;
 
-import com.example.nexusa.Repository.UniversityRepository;
+import com.example.nexusa.Repository.GlobalRepositories.UniversityRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 
 @Service
+@org.springframework.transaction.annotation.Transactional
 public class UniversityService {
     private final UniversityRepository universityRepository;
 

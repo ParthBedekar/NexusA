@@ -1,16 +1,16 @@
 package com.example.nexusa.Service;
 
-import com.example.nexusa.Dto.AddNodeRequestDTO;
-import com.example.nexusa.Dto.CreateCivilizationDTO;
+import com.example.nexusa.Dto.GlobalDTOs.AddNodeRequestDTO;
+import com.example.nexusa.Dto.GlobalDTOs.CreateCivilizationDTO;
 import com.example.nexusa.Model.CVersion;
 import com.example.nexusa.Model.Civilization;
 import com.example.nexusa.Model.EditorAssignment;
-import com.example.nexusa.Model.Enums.Role;
+import com.example.nexusa.Model.Enums.GlobalEnums.Role;
 import com.example.nexusa.Model.User;
-import com.example.nexusa.Repository.CVersionRepository;
-import com.example.nexusa.Repository.CivilizationRepository;
-import com.example.nexusa.Repository.EditorAssignmentRepository;
-import com.example.nexusa.Repository.UserRepository;
+import com.example.nexusa.Repository.GlobalRepositories.CVersionRepository;
+import com.example.nexusa.Repository.GlobalRepositories.CivilizationRepository;
+import com.example.nexusa.Repository.GlobalRepositories.EditorAssignmentRepository;
+import com.example.nexusa.Repository.GlobalRepositories.UserRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@org.springframework.transaction.annotation.Transactional
 public class CivilizationService {
     private final UserRepository userRepository;
     private final CivilizationRepository civilizationRepository;
