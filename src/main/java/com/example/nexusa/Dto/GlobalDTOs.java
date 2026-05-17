@@ -217,6 +217,48 @@ public class GlobalDTOs {
     }
 
     @Data
+    public static class LLMQueryRequest {
+        private String query;
+        private UUID sessionId;
+        private String modelName;
+    }
+
+    @Data
+    public static class LLMChatMessageDTO {
+        private String role;
+        private String content;
+    }
+
+    @Data
+    public static class LLMQueryResponse {
+        private UUID sessionId;
+        private String sessionName;
+        private String answer;
+        private List<LLMChatMessageDTO> conversation;
+    }
+
+    @Data
+    public static class LLMCreateSessionRequest {
+        private String sessionName;
+        private String modelName;
+    }
+
+    @Data
+    public static class LLMCreateSessionResponse {
+        private UUID sessionId;
+        private String sessionName;
+        private String modelName;
+    }
+
+    @Data
+    public static class LLMChatSessionDTO {
+        private UUID sessionId;
+        private String sessionName;
+        private String modelName;
+        private LocalDateTime updatedAt;
+    }
+
+    @Data
     public static class HistoricalClaimCreateDTO {
     
         private UUID submissionId; // Optional if created independently, though often linked

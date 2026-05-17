@@ -51,6 +51,7 @@ import com.example.nexusa.SemanticValidation.service.SemanticValidationService;
 import com.example.nexusa.Service.AuthService;
 import com.example.nexusa.Service.CitationSourceService;
 import com.example.nexusa.Service.CivilizationService;
+import com.example.nexusa.Service.LLMService;
 import com.example.nexusa.Service.ClaimEvidenceService;
 import com.example.nexusa.Service.HistoricalClaimService;
 import com.example.nexusa.Service.ResearchSubmissionService;
@@ -89,7 +90,7 @@ public class GlobalControllers {
          * AI Application Entry Point
          * Returns a heavily denormalized map of an entity and all verified historical facts.
          */
-        @GetMapping("/entities/{id}/context")
+        @getMapping("/entities/{id}/context")
         public ResponseEntity<Map<String, Object>> getEntityContextForAI(@PathVariable UUID id) {
             return ResponseEntity.ok(retrievalService.getDenormalizedEntityKnowledge(id));
         }
@@ -381,6 +382,77 @@ public class GlobalControllers {
                 return ResponseEntity.ok(civilizationService.getAllUniversityCivilizations());
             } catch (RuntimeException e) {
                 return ResponseEntity.badRequest().build();
+            }
+        }
+    }
+
+    @RestController
+    @RequestMapping("/api/llm")
+    public static class LLMController {
+        private final LLMService llmService;
+
+        public LLMController(LLMService llmService) {
+            this.llmService = llmService;
+        }
+
+        @PostMapping("/query/{civId}")
+        public ResponseEntity<LLMQueryResponse> queryCivilization(@PathVariable UUID civId,
+                                                                  @RequestBody LLMQueryRequest request) {
+            try {
+                return ResponseEntity.ok(llmService.queryCivilization(civId, request));
+            } catch (RuntimeException e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
+        @GetMapping("/conversation/{civId}")
+        public ResponseEntity<List<LLMChatMessageDTO>> getConversation(@PathVariable UUID civId,
+                                                                       @RequestParam(required = false) UUID sessionId) {
+            try {
+                return ResponseEntity.ok(llmService.getConversation(civId, sessionId));
+            } catch (RuntimeException e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
+        @GetMapping("/sessions/{civId}")
+        public ResponseEntity<List<LLMChatSessionDTO>> listSessions(@PathVariable UUID civId) {
+            try {
+                return ResponseEntity.ok(llmService.listSessions(civId));
+            } catch (RuntimeException e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
+        @PostMapping("/sessions/{civId}")
+        public ResponseEntity<LLMChatSessionDTO> createSession(@PathVariable UUID civId,
+                                                               @RequestBody LLMCreateSessionRequest request) {
+            try {
+                return ResponseEntity.ok(llmService.createSession(civId, request));
+            } catch (RuntimeException e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
+        @PatchMapping("/sessions/{civId}/{sessionId}/name")
+        public ResponseEntity<LLMChatSessionDTO> renameSession(@PathVariable UUID civId,
+                                                               @PathVariable UUID sessionId,
+                                                               @RequestBody LLMCreateSessionRequest request) {
+            try {
+                return ResponseEntity.ok(llmService.renameSession(civId, sessionId, request.getSessionName()));
+            } catch (RuntimeException e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
+        @DeleteMapping("/sessions/{civId}/{sessionId}")
+        public ResponseEntity<?> deleteSession(@PathVariable UUID civId,
+                                               @PathVariable UUID sessionId) {
+            try {
+                llmService.deleteSession(civId, sessionId);
+                return ResponseEntity.ok().build();
+            } catch (RuntimeException e) {
+                return ResponseEntity.badRequest().body(e.getMessage());
             }
         }
     }
@@ -821,7 +893,6 @@ public class GlobalControllers {
                 @RequestParam UUID moderatorId, 
                 @RequestBody ModerationActionRequestDTO request) {
             moderationService.executeAction(id, moderatorId, request);
-            // Also emit notification / event here in a real implementation
             return ResponseEntity.ok().build();
         }
     }
@@ -900,18 +971,6 @@ public class GlobalControllers {
          * POST /api/validation/submission/{id}
          * Validates a single research submission through the full rule pipeline.
          * Returns a granular breakdown of errors by severity.
-         *
-         * Example response:
-         * {
-         *   "submissionId": "...",
-         *   "passed": false,
-         *   "blocked": true,
-         *   "totalErrors": 3,
-         *   "criticalErrors": [{ "ruleCode": "REQUIRED_FIELDS", "fieldPath": "submissionTitle", ... }],
-         *   "errors": [],
-         *   "warnings": [],
-         *   "infos": []
-         * }
          */
         @PostMapping("/submission/{id}")
         public ResponseEntity<ValidationResultResponseDTO> validateSubmission(@PathVariable UUID id) {
@@ -926,8 +985,6 @@ public class GlobalControllers {
          * POST /api/validation/batch
          * Validates multiple submissions in a single run.
          * Request body: list of submission UUIDs.
-         *
-         * Example request body: ["uuid1", "uuid2", "uuid3"]
          */
         @PostMapping("/batch")
         public ResponseEntity<ValidationReportResponseDTO> validateBatch(@RequestBody List<UUID> submissionIds) {
@@ -968,5 +1025,4 @@ public class GlobalControllers {
             }
         }
     }
-
 }

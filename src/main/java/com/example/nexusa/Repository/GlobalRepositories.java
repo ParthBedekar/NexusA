@@ -16,6 +16,8 @@ import com.example.nexusa.Model.CitationSource;
 import com.example.nexusa.Model.Civilization;
 import com.example.nexusa.Model.ClaimEvidence;
 import com.example.nexusa.Model.EditorAssignment;
+import com.example.nexusa.Model.LLMChatMessage;
+import com.example.nexusa.Model.LLMChatSession;
 import com.example.nexusa.Model.Enums.GlobalEnums.CanonicalEntityStatus;
 import com.example.nexusa.Model.Enums.GlobalEnums.ClaimStatus;
 import com.example.nexusa.Model.Enums.GlobalEnums.ConflictGroupStatus;
@@ -353,11 +355,24 @@ public interface GlobalRepositories {
     }
 
     @Repository
+    public interface ChatSessionRepository extends JpaRepository<LLMChatSession, UUID> {
+        Optional<LLMChatSession> findBySessionIdAndCreatedBy_Email(UUID sessionId, String email);
+        Optional<LLMChatSession> findByCivIdAndCreatedBy_EmailAndDefaultSessionTrue(UUID civId, String email);
+        List<LLMChatSession> findByCreatedBy_EmailAndCivIdOrderByUpdatedAtDesc(String email, UUID civId);
+    }
+
+    @Repository
+    public interface ChatMessageRepository extends JpaRepository<LLMChatMessage, UUID> {
+        List<LLMChatMessage> findBySession_SessionIdOrderByCreatedAtAsc(UUID sessionId);
+        void deleteBySession_SessionId(UUID sessionId);
+    }
+
+    @Repository
     public interface SemanticValidationResultRepository extends JpaRepository<SemanticValidationResult, UUID> {
         List<SemanticValidationResult> findByEntityIdOrderByCreatedAtDesc(String entityId);
-    
+
         List<SemanticValidationResult> findByClaimIdOrderByCreatedAtDesc(String claimId);
-    
+
         List<SemanticValidationResult> findByStatusOrderByCreatedAtDesc(SemanticFindingStatus status);
     }
 

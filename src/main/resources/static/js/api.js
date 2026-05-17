@@ -61,7 +61,19 @@ async function apiFetch(path, options = {}) {
     try { data = JSON.parse(text); } catch { data = text; }
 
     if (!res.ok) {
-        const msg = typeof data === 'string' ? data : (data?.message || `Request failed (${res.status})`);
+        // Upgraded error handling to catch strict Spring Boot Validation Errors
+        let msg = `Request failed (${res.status})`;
+        if (typeof data === 'object' && data !== null) {
+            if (data.message) msg = data.message;
+            else if (data.error) msg = data.error;
+            
+            if (data.errors && Array.isArray(data.errors)) {
+                const validationErrors = data.errors.map(e => e.defaultMessage || e.field).join(', ');
+                if (validationErrors) msg += `: ${validationErrors}`;
+            }
+        } else if (typeof data === 'string' && data.trim().length > 0) {
+            msg = data;
+        }
         throw new Error(msg);
     }
     return data;
@@ -136,6 +148,47 @@ const CivAPI = {
 
     async getEditors(civId) {
         return apiFetch(`/civilization/${civId}/editors`);
+    },
+
+    async queryLLM(civId, query, sessionId, modelName) {
+        const payload = { 
+            query: query 
+        };
+        
+        // Only attach sessionId if it is a valid string, preventing UUID parse errors in Spring
+        if (sessionId && typeof sessionId === 'string' && sessionId.trim() !== '') {
+            payload.sessionId = sessionId;
+        }
+        
+        // Only attach modelName if provided
+        if (modelName && typeof modelName === 'string' && modelName.trim() !== '') {
+            payload.modelName = modelName;
+        }
+
+        return apiFetch(`/api/llm/query/${civId}`, {
+            method: 'POST',
+            body: payload
+        });
+    },
+
+    async getLLMConversation(civId, sessionId) {
+        const query = sessionId ? `?sessionId=${sessionId}` : '';
+        return apiFetch(`/api/llm/conversation/${civId}${query}`);
+    },
+
+    async getLLMSessions(civId) {
+        return apiFetch(`/api/llm/sessions/${civId}`);
+    },
+
+    async createLLMSession(civId, data) {
+        return apiFetch(`/api/llm/sessions/${civId}`, {
+            method: 'POST',
+            body: data
+        });
+    },
+
+    async deleteLLMSession(civId, sessionId) {
+        return apiFetch(`/api/llm/sessions/${civId}/${sessionId}`, { method: 'DELETE' });
     },
 
     async getUniversityUsers() {

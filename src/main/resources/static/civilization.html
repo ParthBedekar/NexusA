@@ -68,6 +68,34 @@
         <div id="assign-editor-wrap" style="padding:0 20px 20px;display:none">
             <button class="btn btn-teal w-full btn-sm" onclick="openModal('assign-editor-modal')">+ Assign editor</button>
         </div>
+
+        <div class="panel-header" style="margin-top:16px">
+            <div class="panel-title">Civilization Q&A</div>
+            <div class="panel-sub">Ask questions about this tree</div>
+        </div>
+        <div class="llm-chat-panel" id="llm-chat-panel">
+            <div class="llm-chat-toolbar">
+                <div class="llm-chat-toolbar-group">
+                    <label for="llm-session-select">Session</label>
+                    <select id="llm-session-select" onchange="selectLLMSession()">
+                        <option>Loading sessions…</option>
+                    </select>
+                </div>
+                <div class="llm-chat-toolbar-group">
+                    <label for="llm-model-name">Model</label>
+                    <input id="llm-model-name" class="llm-model-input" placeholder="Leave blank to use default model" />
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="redirectToChat()">New chat</button>
+                <button class="btn btn-secondary btn-sm" onclick="openChatPage()">Open full chat</button>
+            </div>
+            <div class="llm-chat-messages" id="llm-chat-messages">
+                <div class="empty-state"><p>Ask a question about your civilization.</p></div>
+            </div>
+            <div class="llm-chat-input-row">
+                <textarea id="llm-query" class="llm-query-input" placeholder="Ask about this civilization tree..." rows="4"></textarea>
+                <button class="btn btn-primary btn-send" id="llm-send-btn" onclick="submitLLMQuery()" title="Send message (Ctrl+Enter)">Send</button>
+            </div>
+        </div>
     </div>
 
 </div>
@@ -174,6 +202,9 @@
     let currentVersionHash = null;
     let rootNodeId = null;
     let role = jwtRole;
+    let llmSessionId = null;
+    let llmSessions = [];
+    let llmModelName = '';
 
     if (!civId) window.location.href = 'dashboard.html';
 
@@ -410,6 +441,151 @@
         }
     }
 
+    async function loadLLMConversation() {
+        try {
+            const history = await CivAPI.getLLMConversation(civId, llmSessionId);
+            window.llmConversation = Array.isArray(history) ? history : [];
+            renderLLMConversation();
+        } catch (err) {
+            showToast('Could not load AI conversation', 'error');
+        }
+    }
+
+    async function loadLLMSessions() {
+        try {
+            const sessions = await CivAPI.getLLMSessions(civId);
+            llmSessions = Array.isArray(sessions) ? sessions : [];
+
+            if (!llmSessions.length) {
+                const created = await CivAPI.createLLMSession(civId, {
+                    sessionName: `Chat ${llmSessions.length + 1}`,
+                    modelName: document.getElementById('llm-model-name')?.value.trim() || ''
+                });
+                llmSessions = [created];
+            }
+
+            if (!llmSessionId || !llmSessions.some(s => s.sessionId === llmSessionId)) {
+                llmSessionId = llmSessions[0].sessionId;
+                llmModelName = llmSessions[0].modelName || '';
+            }
+
+            renderLLMSessionSelect();
+            updateSessionInputs();
+        } catch (err) {
+            showToast('Could not load AI sessions', 'error');
+        }
+    }
+
+    function renderLLMSessionSelect() {
+        const select = document.getElementById('llm-session-select');
+        if (!select) return;
+
+        if (!llmSessions.length) {
+            select.innerHTML = '<option disabled>No chat sessions available</option>';
+            return;
+        }
+
+        select.innerHTML = llmSessions.map(session => `
+            <option value="${session.sessionId}" ${session.sessionId === llmSessionId ? 'selected' : ''}>
+                ${session.sessionName || 'Chat'}
+            </option>
+        `).join('');
+    }
+
+    function updateSessionInputs() {
+        const modelInput = document.getElementById('llm-model-name');
+        if (modelInput) {
+            modelInput.value = llmModelName || '';
+        }
+    }
+
+    async function selectLLMSession() {
+        const select = document.getElementById('llm-session-select');
+        if (!select) return;
+        llmSessionId = select.value;
+        const selected = llmSessions.find(s => s.sessionId === llmSessionId);
+        llmModelName = selected?.modelName || '';
+        updateSessionInputs();
+        await loadLLMConversation();
+    }
+
+    function redirectToChat() {
+        window.location.href = `chat.html?civId=${encodeURIComponent(civId)}`;
+    }
+
+    function openChatPage() {
+        window.location.href = `chat.html?civId=${encodeURIComponent(civId)}`;
+    }
+
+    function renderLLMConversation() {
+        const container = document.getElementById('llm-chat-messages');
+        if (!container) return;
+        const history = window.llmConversation || [];
+        if (!history.length) {
+            container.innerHTML = '<div class="empty-state"><p>Ask a question about your civilization.</p></div>';
+            return;
+        }
+
+        container.innerHTML = history.map(message => {
+            const cssClass = message.role === 'assistant' ? 'assistant' : 'user';
+            return `<div class="llm-chat-message ${cssClass}"><strong>${message.role}:</strong> ${escapeHtml(message.content)}</div>`;
+        }).join('');
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function escapeHtml(value) {
+        return value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    async function submitLLMQuery() {
+        const input = document.getElementById('llm-query');
+        const query = input?.value.trim();
+        if (!query) {
+            input?.focus();
+            return;
+        }
+
+        const btn = document.getElementById('llm-send-btn');
+        const modelInput = document.getElementById('llm-model-name');
+        const modelName = modelInput?.value.trim() || llmModelName || '';
+        btn.disabled = true;
+        btn.textContent = 'Thinking…';
+        try {
+            const response = await CivAPI.queryLLM(civId, query, llmSessionId, modelName);
+            llmSessionId = response.sessionId || llmSessionId;
+            window.llmConversation = response.conversation || [];
+            renderLLMConversation();
+            input.value = '';
+            input.style.height = 'auto';
+            if (modelInput) {
+                llmModelName = modelInput.value.trim();
+            }
+        } catch (err) {
+            showToast(err.message || 'AI query failed', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Send';
+        }
+    }
+
+    // Enable Ctrl+Enter to send message
+    document.addEventListener('DOMContentLoaded', function() {
+        const queryInput = document.getElementById('llm-query');
+        if (queryInput) {
+            queryInput.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    submitLLMQuery();
+                }
+            });
+        }
+    });
+
     async function loadUsersForAssign() {
         try {
             const users = await CivAPI.getUniversityUsers();
@@ -550,6 +726,8 @@
     async function boot() {
         await resolveEffectiveRole();
         await Promise.all([loadLatest(), loadVersions(), loadEditors()]);
+        await loadLLMSessions();
+        await loadLLMConversation();
     }
 
     boot();
