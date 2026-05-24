@@ -2,6 +2,7 @@ package com.example.nexusa.Model;
 
 
 import com.example.nexusa.Model.Enums.CommitType;
+import com.example.nexusa.Model.Enums.ReviewStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -21,7 +22,7 @@ public class CVersion {
     @JoinColumn(name = "civ_id", nullable = false)
     private Civilization civilization;
 
-    @Column(name = "hash", nullable = false, unique = true)
+    @Column(name = "hash", nullable = false)
     private String hash;
 
     @Column(name = "version_title")
@@ -49,4 +50,18 @@ public class CVersion {
 
     @Column(name = "end_date")
     private Long endDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "review_status")
+    private ReviewStatus reviewStatus = ReviewStatus.DRAFT;
+
+    @ManyToOne
+    @JoinColumn(name = "reviewed_by")
+    private User reviewedBy;
+
+    @Column(name = "reviewed_at")
+    private LocalDateTime reviewedAt;
+
+    @Column(name = "reviewer_note", columnDefinition = "TEXT")
+    private String reviewerNote;
 }

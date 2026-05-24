@@ -78,6 +78,11 @@ async function loadCivilizations() {
 function civCard(c) {
     const start = formatYear(c.startDate ?? c.startYear);
     const end   = formatYear(c.endDate ?? c.endYear);
+
+    const deleteBtn = role === 'ADMIN'
+        ? `<button class="btn-delete-civ" data-id="${c.civId}" onclick="deleteCivilization(event, '${c.civId}')">Delete</button>`
+        : '';
+
     return `
         <a class="civ-card" href="civilization.html?civId=${c.civId}">
             <div class="civ-card-top">
@@ -87,10 +92,24 @@ function civCard(c) {
             <p class="civ-desc">${c.description || 'No description provided.'}</p>
             <div class="civ-card-footer">
                 <span class="link-btn">Open →</span>
+                ${deleteBtn}
             </div>
         </a>`;
 }
+async function deleteCivilization(event, civId) {
+    event.preventDefault();   // stop the <a> from navigating
+    event.stopPropagation();
 
+    if (!confirm('Permanently delete this civilization and all its versions?')) return;
+
+    try {
+        await CivAPI.delete(civId);
+        showToast('Civilization deleted', 'success');
+        loadCivilizations();
+    } catch (err) {
+        showToast(err.message || 'Delete failed', 'error');
+    }
+}
 /* ─── Load users (Admin) ─── */
 let usersLoaded = false;
 async function loadUsers() {

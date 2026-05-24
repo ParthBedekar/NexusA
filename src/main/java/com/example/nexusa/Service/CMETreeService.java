@@ -44,7 +44,7 @@ public class CMETreeService {
     public CVersion createInitialVersion(Civilization civilization, String commitMsg, User user) {
         PersistentTree<String, CMENode> initTree = TreeFactory.createTree(null, TreeType.N_ARY);
         String serialized = serializer.serialize(initTree);
-        String hash = generateHash(serialized + civilization.getCivId().toString());
+        String hash = generateHash(serialized + civilization.getCivId().toString()+LocalDateTime.now());
 
         CVersion init = new CVersion();
         init.setCivilization(civilization);

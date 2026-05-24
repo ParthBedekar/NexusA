@@ -2,6 +2,7 @@ package com.example.nexusa.Controller;
 
 import com.example.nexusa.Dto.AddNodeRequestDTO;
 import com.example.nexusa.Dto.CreateCivilizationDTO;
+import com.example.nexusa.Dto.ReviewDecisionDTO;
 import com.example.nexusa.Dto.RollbackRequestDTO;
 import com.example.nexusa.Model.CVersion;
 import com.example.nexusa.Model.Civilization;
@@ -40,11 +41,56 @@ public class CivilizationController {
             return ResponseEntity.badRequest().build();
         }
     }
-
+    @DeleteMapping("/civilization/{civId}")
+    public ResponseEntity<String> deleteCivilization(@PathVariable UUID civId) {
+        try {
+            civilizationService.deleteCivilization(civId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
     @GetMapping("/civilization/{civId}/latest")
     public ResponseEntity<CVersion> getLatestVersion(@PathVariable UUID civId) {
         try {
             return ResponseEntity.ok(civilizationService.getLatestVersion(civId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }@PatchMapping("/civilization/{civId}/version/{versionId}/submit")
+    public ResponseEntity<String> submitForReview(@PathVariable UUID civId,
+                                                  @PathVariable UUID versionId) {
+        try {
+            civilizationService.submitForReview(civId, versionId);
+            return ResponseEntity.ok("Submitted for review");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    // CivilizationController
+    @GetMapping("/review/reviewed")
+    public ResponseEntity<List<CVersion>> getReviewedVersions() {
+        try {
+            return ResponseEntity.ok(civilizationService.getReviewedVersions());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    @PatchMapping("/review/version/{versionId}")
+    public ResponseEntity<String> reviewVersion(@PathVariable UUID versionId,
+                                                @RequestBody ReviewDecisionDTO dto) {
+        try {
+            civilizationService.reviewVersion(versionId, dto.getStatus(), dto.getNote());
+            return ResponseEntity.ok("Review recorded");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/review/pending")
+    public ResponseEntity<List<CVersion>> getPendingVersions() {
+        try {
+            return ResponseEntity.ok(civilizationService.getPendingVersions());
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -123,9 +169,10 @@ public class CivilizationController {
                                              @RequestBody RollbackRequestDTO dto) {
         try {
             return ResponseEntity.ok(civilizationService.rollback(civId, dto.getHash()));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(null);
-        }
+        }catch (Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.badRequest().build();
+    }
     }
     // In CivilizationController.java
     @GetMapping("/civilization/all")

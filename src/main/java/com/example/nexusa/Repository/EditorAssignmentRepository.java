@@ -13,4 +13,5 @@ public interface EditorAssignmentRepository extends JpaRepository<EditorAssignme
 
     List<EditorAssignment> findByCivilization_CivId(UUID civilizationCivId);
     List<EditorAssignment> findByEditor_UserId(UUID userId);
+    void deleteByCivilization_CivId(UUID civId);
 }

@@ -1,7 +1,5 @@
 package com.example.nexusa.Model.Enums;
 
 public enum Role {
-    ADMIN,
-    EDITOR,
-    VIEWER
+    SUPER_ADMIN, REVIEWER, ADMIN, EDITOR, VIEWER
 }

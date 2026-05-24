@@ -5,12 +5,14 @@ import com.example.nexusa.Dto.CreateCivilizationDTO;
 import com.example.nexusa.Model.CVersion;
 import com.example.nexusa.Model.Civilization;
 import com.example.nexusa.Model.EditorAssignment;
+import com.example.nexusa.Model.Enums.ReviewStatus;
 import com.example.nexusa.Model.Enums.Role;
 import com.example.nexusa.Model.User;
 import com.example.nexusa.Repository.CVersionRepository;
 import com.example.nexusa.Repository.CivilizationRepository;
 import com.example.nexusa.Repository.EditorAssignmentRepository;
 import com.example.nexusa.Repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -74,7 +76,48 @@ public class CivilizationService {
         }
         return civilization.getCivId();
     }
+    public void submitForReview(UUID civId, UUID versionId) {
+        User admin = getAuthenticatedUser();
+        if (admin.getRole() != Role.ADMIN)
+            throw new RuntimeException("Only admins can submit for review");
 
+        CVersion version = cVersionRepository.findById(versionId)
+                .orElseThrow(() -> new RuntimeException("Version not found"));
+        if (!version.getCivilization().getCivId().equals(civId))
+            throw new RuntimeException("Version does not belong to this civilization");
+        if (version.getReviewStatus() != ReviewStatus.DRAFT &&
+                version.getReviewStatus() != ReviewStatus.REVISION_REQUESTED)
+            throw new RuntimeException("Only DRAFT or REVISION_REQUESTED versions can be submitted");
+
+        version.setReviewStatus(ReviewStatus.PENDING_REVIEW);
+        cVersionRepository.save(version);
+    }
+
+    public void reviewVersion(UUID versionId, ReviewStatus decision, String note) {
+        User reviewer = getAuthenticatedUser();
+        if (reviewer.getRole() != Role.REVIEWER)
+            throw new RuntimeException("Only reviewers can review versions");
+        if (decision == ReviewStatus.DRAFT || decision == ReviewStatus.PENDING_REVIEW)
+            throw new RuntimeException("Invalid review decision");
+
+        CVersion version = cVersionRepository.findById(versionId)
+                .orElseThrow(() -> new RuntimeException("Version not found"));
+        if (version.getReviewStatus() != ReviewStatus.PENDING_REVIEW)
+            throw new RuntimeException("Version is not pending review");
+
+        version.setReviewStatus(decision);
+        version.setReviewedBy(reviewer);
+        version.setReviewedAt(LocalDateTime.now());
+        version.setReviewerNote(note);
+        cVersionRepository.save(version);
+    }
+
+    public List<CVersion> getPendingVersions() {
+        User reviewer = getAuthenticatedUser();
+        if (reviewer.getRole() != Role.REVIEWER)
+            throw new RuntimeException("Only reviewers can access this");
+        return cVersionRepository.findByReviewStatus(ReviewStatus.PENDING_REVIEW);
+    }
     public List<User> getUniversityUsers() {
         User admin = getAuthenticatedUser();
         return userRepository.findByUniID(admin.getUniID());
@@ -105,7 +148,24 @@ public class CivilizationService {
         assignment.setAssignedAt(LocalDateTime.now());
         editorAssignmentRepository.save(assignment);
     }
+    @Transactional
+    public void deleteCivilization(UUID civId) {
+        User admin = getAuthenticatedUser();
+        if (admin.getRole() != Role.ADMIN) {
+            throw new RuntimeException("Only admins can delete civilizations");
+        }
+        Civilization civ = civilizationRepository.findById(civId)
+                .orElseThrow(() -> new RuntimeException("Civilization not found"));
 
+        // Compare University IDs, not object references
+        if (!civ.getUniversity().getId().equals(admin.getUniID().getId())) {
+            throw new RuntimeException("Civilization does not belong to your university");
+        }
+
+        editorAssignmentRepository.deleteByCivilization_CivId(civId);
+        cVersionRepository.deleteByCivilization_CivId(civId);
+        civilizationRepository.deleteById(civId);
+    }
     public List<EditorAssignment> getCivilizationEditors(UUID civId) {
         return editorAssignmentRepository.findByCivilization_CivId(civId);
     }
@@ -159,5 +219,13 @@ public class CivilizationService {
             throw new RuntimeException("Only admins can access this");
         }
         return civilizationRepository.findByUniversity(admin.getUniID());
+    }
+
+    // CivilizationService
+    public List<CVersion> getReviewedVersions() {
+        User reviewer = getAuthenticatedUser();
+        if (reviewer.getRole() != Role.REVIEWER)
+            throw new RuntimeException("Only reviewers can access this");
+        return cVersionRepository.findByReviewedBy_UserId(reviewer.getUserId());
     }
 }

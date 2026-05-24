@@ -1,6 +1,7 @@
 package com.example.nexusa.Repository;
 
 import com.example.nexusa.Model.CVersion;
+import com.example.nexusa.Model.Enums.ReviewStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,4 +18,9 @@ public interface CVersionRepository extends JpaRepository<CVersion, UUID> {
 
     Optional<CVersion> findByCivilization_CivIdAndHash(UUID civId, String hash);
     List<CVersion> findByCivilization_CivIdOrderByCommitTimestampDesc(UUID civId);
+    void deleteByCivilization_CivId(UUID civId);
+
+    List<CVersion> findByReviewStatus(ReviewStatus status);
+
+    List<CVersion> findByReviewedBy_UserId(UUID userId);
 }
