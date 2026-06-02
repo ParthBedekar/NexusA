@@ -26,6 +26,11 @@
         <div class="panel-header">
             <div class="panel-title">Version history</div>
             <div class="panel-sub" id="version-count">Loading&hellip;</div>
+            <div id="submit-review-wrap" style="display:none;padding:12px 16px 0">
+                <button class="btn btn-teal w-full btn-sm" id="submit-all-btn" onclick="submitAllForReview()">
+                    ↑ Submit drafts for review
+                </button>
+            </div>
         </div>
         <div class="version-list" id="version-list">
             <div class="empty-state"><div class="spinner spinner-dark"></div></div>
@@ -186,7 +191,34 @@
     function closeModal(id) {
         document.getElementById(id).classList.remove('active');
     }
-
+    async function submitAllForReview() {
+        const btn = document.getElementById('submit-all-btn');
+        try {
+            const versions = await CivAPI.getVersions(civId);
+            const eligible = versions.filter(v =>
+                v.reviewStatus === 'DRAFT' || v.reviewStatus === 'REVISION_REQUESTED'
+            );
+            if (!eligible.length) {
+                showToast('No DRAFT or REVISION_REQUESTED versions to submit', 'info');
+                return;
+            }
+            btn.disabled = true;
+            btn.textContent = `Submitting ${eligible.length}…`;
+            const results = await Promise.allSettled(
+                eligible.map(v => CivAPI.submitForReview(civId, v.versionId))
+            );
+            const succeeded = results.filter(r => r.status === 'fulfilled').length;
+            const failed    = results.filter(r => r.status === 'rejected').length;
+            if (succeeded) showToast(`${succeeded} version${succeeded !== 1 ? 's' : ''} submitted for review`, 'success');
+            if (failed)    showToast(`${failed} submission${failed !== 1 ? 's' : ''} failed`, 'error');
+            await loadVersions();
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '↑ Submit drafts for review';
+        }
+    }
     // ── Toast helpers ──
     function showToast(msg, type = 'info') {
         const container = document.getElementById('toast-container');
@@ -232,6 +264,13 @@
                     </div>
                     <div class="v-msg">${v.commitMessage || 'No message'}</div>
                     <div class="v-time">${new Date(v.commitTimestamp).toLocaleString()}</div>
+                    <div class="v-status">
+                        <span class="v-type ${
+                    v.reviewStatus === 'PUBLISHED'         ? 'v-type-major' :
+                        v.reviewStatus === 'PENDING_REVIEW'    ? 'v-type-minor' :
+                            v.reviewStatus === 'REJECTED'          ? 'v-type-rejected' : ''
+                        }">${v.reviewStatus || 'DRAFT'}</span>
+                    </div>
                     ${role === 'ADMIN' && i > 0
                             ? `<button class="btn btn-secondary btn-sm rollback-btn"
                                    onclick="event.stopPropagation();rollback('${v.hash}')">
@@ -241,6 +280,13 @@
                 </div>`).join('');
 
             if (versions[0]) loadTree(versions[0]);
+            // Show submit button only for admins with eligible versions
+            if (role === 'ADMIN') {
+                const hasDrafts = versions.some(v =>
+                    v.reviewStatus === 'DRAFT' || v.reviewStatus === 'REVISION_REQUESTED'
+                );
+                document.getElementById('submit-review-wrap').style.display = hasDrafts ? 'block' : 'none';
+            }
         } catch (err) {
             document.getElementById('version-list').innerHTML =
                 `<div class="empty-state"><p>${err.message}</p></div>`;

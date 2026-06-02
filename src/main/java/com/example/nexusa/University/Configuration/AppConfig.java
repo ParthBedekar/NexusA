@@ -1,4 +1,4 @@
-package com.example.nexusa.Configuration;
+package com.example.nexusa.University.Configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;

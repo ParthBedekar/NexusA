@@ -218,7 +218,10 @@ const CivAPI = {
     async rollback(civId, hash)         { return apiFetch(`/civilization/${civId}/rollback`, { method: 'POST', body: { hash } }); },
     async assignEditor(civId, userId)   { return apiFetch(`/civilization/${civId}/editors`,  { method: 'POST', body: { userId } }); },
     async getEditors(civId)             { return apiFetch(`/civilization/${civId}/editors`); },
-    async getUniversityUsers()          { return apiFetch('/civilization/users'); }
+    async getUniversityUsers()          { return apiFetch('/civilization/users'); },
+    async submitForReview(civId, versionId) {
+        return apiFetch(`/civilization/${civId}/version/${versionId}/submit`, { method: 'PATCH' });
+    },
 };
 
 // ── Toast System ──────────────────────────────────────────────────────────────
@@ -285,6 +288,8 @@ function formatYear(year) {
     if (year == null) return '—';
     return year < 0 ? `${Math.abs(year)} BCE` : `${year} CE`;
 }
+
+
 
 function shortHash(hash) { return hash ? hash.substring(0, 8) : ''; }
 

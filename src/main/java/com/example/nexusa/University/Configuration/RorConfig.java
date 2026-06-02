@@ -1,4 +1,4 @@
-package com.example.nexusa.Configuration;
+package com.example.nexusa.University.Configuration;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

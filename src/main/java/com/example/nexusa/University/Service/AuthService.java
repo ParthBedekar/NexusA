@@ -1,7 +1,7 @@
-package com.example.nexusa.Service;
+package com.example.nexusa.University.Service;
 
-import com.example.nexusa.Dto.LoginRequestDTO;
-import com.example.nexusa.Dto.RegistrationRequestDTO;
+import com.example.nexusa.University.Dto.LoginRequestDTO;
+import com.example.nexusa.University.Dto.RegistrationRequestDTO;
 import com.example.nexusa.Model.AdminCodes;
 import com.example.nexusa.Model.Enums.Role;
 import com.example.nexusa.Model.University;
@@ -10,7 +10,7 @@ import com.example.nexusa.Model.User;
 import com.example.nexusa.Repository.AdminCodeRepository;
 import com.example.nexusa.Repository.UniversityRepository;
 import com.example.nexusa.Repository.UserRepository;
-import com.example.nexusa.Utility.JwtUtil;
+import com.example.nexusa.University.Utility.JwtUtil;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

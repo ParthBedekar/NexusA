@@ -1,4 +1,4 @@
-package com.example.nexusa.Service;
+package com.example.nexusa.University.Service;
 
 import com.example.nexusa.Model.*;
 import com.example.nexusa.Model.Enums.CommitType;

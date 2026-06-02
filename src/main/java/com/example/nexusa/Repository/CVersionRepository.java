@@ -22,5 +22,5 @@ public interface CVersionRepository extends JpaRepository<CVersion, UUID> {
 
     List<CVersion> findByReviewStatus(ReviewStatus status);
 
-    List<CVersion> findByReviewedBy_UserId(UUID userId);
+    List<CVersion> findByReviewedBy_ReviewerId(UUID reviewerId);
 }

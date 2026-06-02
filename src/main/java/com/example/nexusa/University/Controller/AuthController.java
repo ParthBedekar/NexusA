@@ -1,9 +1,9 @@
-package com.example.nexusa.Controller;
+package com.example.nexusa.University.Controller;
 
-import com.example.nexusa.Dto.LoginRequestDTO;
-import com.example.nexusa.Dto.RegistrationRequestDTO;
-import com.example.nexusa.Service.AuthService;
-import com.example.nexusa.Service.UniversityService;
+import com.example.nexusa.University.Dto.LoginRequestDTO;
+import com.example.nexusa.University.Dto.RegistrationRequestDTO;
+import com.example.nexusa.University.Service.AuthService;
+import com.example.nexusa.University.Service.UniversityService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;

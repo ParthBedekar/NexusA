@@ -1,6 +1,6 @@
-    package com.example.nexusa.Configuration;
+    package com.example.nexusa.University.Configuration;
 
-    import com.example.nexusa.Utility.JwtFilter;
+    import com.example.nexusa.University.Utility.JwtFilter;
     import org.springframework.context.annotation.Bean;
     import org.springframework.context.annotation.Configuration;
     import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -36,7 +36,7 @@
 
 
             config.setAllowedOrigins(List.of("http://localhost:63342"));
-            config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+            config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH"));
             config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
             config.setAllowCredentials(false);
 

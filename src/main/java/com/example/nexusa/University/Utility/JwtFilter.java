@@ -1,4 +1,4 @@
-package com.example.nexusa.Utility;
+package com.example.nexusa.University.Utility;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

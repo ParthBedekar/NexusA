@@ -1,4 +1,4 @@
-package com.example.nexusa.Dto;
+package com.example.nexusa.University.Dto;
 
 import lombok.Data;
 

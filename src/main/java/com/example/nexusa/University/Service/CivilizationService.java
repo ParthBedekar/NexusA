@@ -1,7 +1,7 @@
-package com.example.nexusa.Service;
+package com.example.nexusa.University.Service;
 
-import com.example.nexusa.Dto.AddNodeRequestDTO;
-import com.example.nexusa.Dto.CreateCivilizationDTO;
+import com.example.nexusa.University.Dto.AddNodeRequestDTO;
+import com.example.nexusa.University.Dto.CreateCivilizationDTO;
 import com.example.nexusa.Model.CVersion;
 import com.example.nexusa.Model.Civilization;
 import com.example.nexusa.Model.EditorAssignment;
@@ -18,8 +18,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -93,31 +91,9 @@ public class CivilizationService {
         cVersionRepository.save(version);
     }
 
-    public void reviewVersion(UUID versionId, ReviewStatus decision, String note) {
-        User reviewer = getAuthenticatedUser();
-        if (reviewer.getRole() != Role.REVIEWER)
-            throw new RuntimeException("Only reviewers can review versions");
-        if (decision == ReviewStatus.DRAFT || decision == ReviewStatus.PENDING_REVIEW)
-            throw new RuntimeException("Invalid review decision");
 
-        CVersion version = cVersionRepository.findById(versionId)
-                .orElseThrow(() -> new RuntimeException("Version not found"));
-        if (version.getReviewStatus() != ReviewStatus.PENDING_REVIEW)
-            throw new RuntimeException("Version is not pending review");
 
-        version.setReviewStatus(decision);
-        version.setReviewedBy(reviewer);
-        version.setReviewedAt(LocalDateTime.now());
-        version.setReviewerNote(note);
-        cVersionRepository.save(version);
-    }
 
-    public List<CVersion> getPendingVersions() {
-        User reviewer = getAuthenticatedUser();
-        if (reviewer.getRole() != Role.REVIEWER)
-            throw new RuntimeException("Only reviewers can access this");
-        return cVersionRepository.findByReviewStatus(ReviewStatus.PENDING_REVIEW);
-    }
     public List<User> getUniversityUsers() {
         User admin = getAuthenticatedUser();
         return userRepository.findByUniID(admin.getUniID());
@@ -221,11 +197,5 @@ public class CivilizationService {
         return civilizationRepository.findByUniversity(admin.getUniID());
     }
 
-    // CivilizationService
-    public List<CVersion> getReviewedVersions() {
-        User reviewer = getAuthenticatedUser();
-        if (reviewer.getRole() != Role.REVIEWER)
-            throw new RuntimeException("Only reviewers can access this");
-        return cVersionRepository.findByReviewedBy_UserId(reviewer.getUserId());
-    }
+
 }

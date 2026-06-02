@@ -1,6 +1,5 @@
 package com.example.nexusa.Model;
 
-
 import com.example.nexusa.Model.Enums.CommitType;
 import com.example.nexusa.Model.Enums.ReviewStatus;
 import jakarta.persistence.*;
@@ -13,6 +12,7 @@ import java.util.UUID;
 @Table(name = "civilization_versions")
 @Data
 public class CVersion {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "version_id")
@@ -55,9 +55,10 @@ public class CVersion {
     @Column(name = "review_status")
     private ReviewStatus reviewStatus = ReviewStatus.DRAFT;
 
+    // FK now points to reviewers table, not users
     @ManyToOne
     @JoinColumn(name = "reviewed_by")
-    private User reviewedBy;
+    private Reviewer reviewedBy;
 
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;

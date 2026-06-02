@@ -1,14 +1,14 @@
-package com.example.nexusa.Controller;
+package com.example.nexusa.University.Controller;
 
-import com.example.nexusa.Dto.AddNodeRequestDTO;
-import com.example.nexusa.Dto.CreateCivilizationDTO;
-import com.example.nexusa.Dto.ReviewDecisionDTO;
-import com.example.nexusa.Dto.RollbackRequestDTO;
+import com.example.nexusa.University.Dto.AddNodeRequestDTO;
+import com.example.nexusa.University.Dto.CreateCivilizationDTO;
+
+import com.example.nexusa.University.Dto.RollbackRequestDTO;
 import com.example.nexusa.Model.CVersion;
 import com.example.nexusa.Model.Civilization;
 import com.example.nexusa.Model.EditorAssignment;
 import com.example.nexusa.Model.User;
-import com.example.nexusa.Service.CivilizationService;
+import com.example.nexusa.University.Service.CivilizationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -67,34 +67,9 @@ public class CivilizationController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    // CivilizationController
-    @GetMapping("/review/reviewed")
-    public ResponseEntity<List<CVersion>> getReviewedVersions() {
-        try {
-            return ResponseEntity.ok(civilizationService.getReviewedVersions());
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-    @PatchMapping("/review/version/{versionId}")
-    public ResponseEntity<String> reviewVersion(@PathVariable UUID versionId,
-                                                @RequestBody ReviewDecisionDTO dto) {
-        try {
-            civilizationService.reviewVersion(versionId, dto.getStatus(), dto.getNote());
-            return ResponseEntity.ok("Review recorded");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
 
-    @GetMapping("/review/pending")
-    public ResponseEntity<List<CVersion>> getPendingVersions() {
-        try {
-            return ResponseEntity.ok(civilizationService.getPendingVersions());
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
+
+
 
     @GetMapping("/civilization/{civId}/versions")
     public ResponseEntity<List<CVersion>> getAllVersions(@PathVariable UUID civId) {

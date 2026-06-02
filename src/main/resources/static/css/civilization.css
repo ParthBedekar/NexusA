@@ -92,6 +92,7 @@ p { color: var(--muted); line-height: 1.75; }
     display: flex;
     flex-direction: column;
     gap: 24px;
+    min-height: 0;
 }
 
 /* ─── Panel headers (left/right columns) ─── */
@@ -262,8 +263,24 @@ p { color: var(--muted); line-height: 1.75; }
     border-radius: 4px;
     background: var(--card);
     overflow: hidden;
+
+    display: flex;
+    flex-direction: column;
+
+    flex: 1;        /* fill remaining space in center column */
+    min-height: 0;  /* required for scrolling inside flex layouts */
 }
 
+/* ─── Tree body ─── */
+.tree-body {
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    padding: 12px 0;
+}
 .tree-toolbar {
     display: flex;
     align-items: center;
@@ -294,14 +311,13 @@ p { color: var(--muted); line-height: 1.75; }
     text-transform: none;
     letter-spacing: 0.03em;
 }
-
-.tree-body {
-    padding: 12px 0;
-}
-
+.v-type-rejected { background: #fce8e8; color: #c0392b; }
+.v-status { margin-top: 4px; }
 /* ─── Tree nodes ─── */
 .tree-node-wrap {
     --depth-indent: 0px;
+    overflow-y: auto;
+    max-height: 70vh;
 }
 
 .tree-node-row {

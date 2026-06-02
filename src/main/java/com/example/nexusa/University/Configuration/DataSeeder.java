@@ -1,6 +1,6 @@
-package com.example.nexusa.Configuration;
+package com.example.nexusa.University.Configuration;
 
-import com.example.nexusa.Service.RorService;
+import com.example.nexusa.University.Service.RorService;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Configuration;
