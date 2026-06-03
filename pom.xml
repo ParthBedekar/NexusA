@@ -53,6 +53,11 @@
             <artifactId>jsoup</artifactId>
             <version>1.18.1</version>
         </dependency>
+        <dependency>
+            <groupId>me.paulschwarz</groupId>
+            <artifactId>spring-dotenv</artifactId>
+            <version>4.0.0</version>
+        </dependency>
             <dependency>
                 <groupId>dev.langchain4j</groupId>
                 <artifactId>langchain4j-core</artifactId>

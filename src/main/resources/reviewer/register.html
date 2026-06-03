@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+    <title>AksharaNexus — Reviewer Registration</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+        :root {
+            --ink:       #0f0e0d;
+            --paper:     #faf8f4;
+            --warm:      #f0ebe0;
+            --accent:    #c8562a;
+            --accent-2:  #2a5bc8;
+            --muted:     #7a7060;
+            --border:    #ddd8cc;
+            --err:       #c0392b;
+            --ok:        #1e7a4a;
+            --ok-bg:     #edf7f1;
+            --ok-border: #b6dfcb;
+            --radius:    6px;
+            --mono:      'DM Mono', monospace;
+            --serif:     'Instrument Serif', serif;
+            --sans:      'DM Sans', sans-serif;
+        }
+
+        html,body { height:100%; font-family:var(--sans); background:var(--paper); color:var(--ink); }
+
+        body {
+            display:flex; align-items:center; justify-content:center;
+            min-height:100vh;
+            padding: 32px 24px;
+            background-image:
+                    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(200,86,42,0.07) 0%, transparent 70%),
+                    radial-gradient(ellipse 50% 60% at 80% 80%, rgba(42,91,200,0.06) 0%, transparent 70%);
+        }
+
+        /* Decorative grain overlay */
+        body::before {
+            content:'';
+            position:fixed; inset:0; pointer-events:none; z-index:0;
+            opacity:.025;
+            background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            background-size:256px 256px;
+        }
+
+        .shell {
+            position:relative; z-index:1;
+            width:100%; max-width:460px;
+            padding:24px;
+        }
+
+        .wordmark {
+            font-family:var(--serif);
+            font-size:1.5rem;
+            letter-spacing:-.02em;
+            color:var(--ink);
+            margin-bottom:4px;
+        }
+        .wordmark em { color:var(--accent); font-style:italic; }
+
+        .tagline {
+            font-family:var(--mono);
+            font-size:.7rem;
+            letter-spacing:.12em;
+            text-transform:uppercase;
+            color:var(--muted);
+            margin-bottom:40px;
+        }
+
+        .card {
+            background:#fff;
+            border:1px solid var(--border);
+            border-radius:10px;
+            padding:36px 32px;
+            box-shadow:0 2px 24px rgba(15,14,13,.06), 0 1px 3px rgba(15,14,13,.04);
+        }
+
+        .card-title {
+            font-family:var(--serif);
+            font-size:1.7rem;
+            line-height:1.15;
+            margin-bottom:8px;
+            letter-spacing:-.02em;
+        }
+        .card-sub {
+            font-size:.83rem;
+            color:var(--muted);
+            margin-bottom:28px;
+            line-height:1.55;
+        }
+
+        /* Two columns for first/last name */
+        .form-row {
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:14px;
+        }
+
+        .form-group { margin-bottom:18px; }
+
+        label {
+            display:block;
+            font-size:.75rem;
+            font-weight:500;
+            letter-spacing:.06em;
+            text-transform:uppercase;
+            color:var(--muted);
+            margin-bottom:7px;
+        }
+
+        input[type=text],
+        input[type=email],
+        input[type=password] {
+            width:100%;
+            padding:11px 14px;
+            border:1.5px solid var(--border);
+            border-radius:var(--radius);
+            font-family:var(--sans);
+            font-size:.9rem;
+            color:var(--ink);
+            background:var(--paper);
+            transition:border-color .15s, box-shadow .15s;
+            outline:none;
+        }
+        input:focus {
+            border-color:var(--accent);
+            box-shadow:0 0 0 3px rgba(200,86,42,.1);
+        }
+
+        /* Secret code field — special treatment */
+        .code-group {
+            margin-bottom:18px;
+            background:var(--warm);
+            border:1.5px dashed var(--border);
+            border-radius:var(--radius);
+            padding:14px 16px;
+        }
+        .code-group label {
+            color:var(--accent);
+            display:flex;
+            align-items:center;
+            gap:6px;
+        }
+        .code-group label::before {
+            content:'⬡';
+            font-size:.9rem;
+        }
+        .code-group input[type=text] {
+            font-family:var(--mono);
+            font-size:.88rem;
+            letter-spacing:.08em;
+            background:#fff;
+        }
+        .code-hint {
+            font-size:.72rem;
+            color:var(--muted);
+            margin-top:7px;
+            line-height:1.5;
+        }
+
+        .btn-register {
+            width:100%; padding:12px;
+            background:var(--accent);
+            color:#fff;
+            border:none; border-radius:var(--radius);
+            font-family:var(--sans); font-size:.9rem; font-weight:500;
+            cursor:pointer;
+            transition:background .15s, transform .1s, box-shadow .15s;
+            margin-top:4px;
+            box-shadow:0 2px 8px rgba(200,86,42,.25);
+        }
+        .btn-register:hover  { background:#b04a23; box-shadow:0 3px 12px rgba(200,86,42,.35); }
+        .btn-register:active { transform:scale(.99); }
+        .btn-register:disabled { opacity:.5; cursor:not-allowed; box-shadow:none; }
+
+        .alert {
+            display:none;
+            font-size:.82rem;
+            padding:10px 13px;
+            border-radius:var(--radius);
+            margin-bottom:16px;
+            line-height:1.5;
+        }
+        .alert.show { display:block; }
+        .alert-error {
+            background:#fdf0ef;
+            border:1px solid #f5c6c4;
+            color:var(--err);
+        }
+        .alert-success {
+            background:var(--ok-bg);
+            border:1px solid var(--ok-border);
+            color:var(--ok);
+        }
+
+        .card-footer {
+            margin-top:22px;
+            font-size:.78rem;
+            color:var(--muted);
+            line-height:1.6;
+            text-align:center;
+            border-top:1px solid var(--border);
+            padding-top:18px;
+        }
+        .card-footer a {
+            color:var(--accent);
+            text-decoration:none;
+            font-weight:500;
+        }
+        .card-footer a:hover { text-decoration:underline; }
+
+        /* Success state — hides form, shows confirmation */
+        .success-state {
+            display:none;
+            text-align:center;
+            padding:12px 0 8px;
+        }
+        .success-state.show { display:block; }
+        .success-icon {
+            font-size:2.4rem;
+            margin-bottom:16px;
+            display:block;
+        }
+        .success-title {
+            font-family:var(--serif);
+            font-size:1.4rem;
+            letter-spacing:-.01em;
+            margin-bottom:8px;
+        }
+        .success-sub {
+            font-size:.85rem;
+            color:var(--muted);
+            line-height:1.6;
+            margin-bottom:24px;
+        }
+        .btn-go-login {
+            display:inline-block;
+            padding:11px 28px;
+            background:var(--ink);
+            color:#fff;
+            border:none;
+            border-radius:var(--radius);
+            font-family:var(--sans); font-size:.88rem; font-weight:500;
+            cursor:pointer;
+            text-decoration:none;
+            transition:background .15s;
+        }
+        .btn-go-login:hover { background:#2a2520; }
+
+        .form-section { transition:opacity .2s; }
+        .form-section.hidden { display:none; }
+    </style>
+</head>
+<body>
+<div class="shell">
+    <div class="wordmark">Akshara<em>Nexus</em></div>
+    <div class="tagline">Reviewer Portal</div>
+
+    <div class="card">
+        <h1 class="card-title">Create your<br>reviewer account</h1>
+        <p class="card-sub">You'll need a registration code issued by the AksharaNexus team for your email address.</p>
+
+        <!-- Success state (shown after registration) -->
+        <div class="success-state" id="success-state">
+            <span class="success-icon">✦</span>
+            <div class="success-title">Account created</div>
+            <p class="success-sub">Your reviewer account is ready.<br>Sign in to access your review queue.</p>
+            <a href="login.html" class="btn-go-login">Go to Sign in</a>
+        </div>
+
+        <!-- Registration form -->
+        <div class="form-section" id="form-section">
+            <div class="alert alert-error" id="err"></div>
+
+            <form id="form" onsubmit="return false">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">First name</label>
+                        <input type="text" id="firstName" placeholder="Ada" autocomplete="given-name" required/>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last name</label>
+                        <input type="text" id="lastName" placeholder="Lovelace" autocomplete="family-name" required/>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email address</label>
+                    <input type="email" id="email" placeholder="reviewer@institution.edu" autocomplete="email" required/>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="••••••••" autocomplete="new-password" required minlength="8"/>
+                </div>
+
+                <div class="code-group">
+                    <label for="code">Registration code</label>
+                    <input type="text" id="code" placeholder="Enter your secret registration code" autocomplete="off" required spellcheck="false"/>
+                    <p class="code-hint">This code is issued by the AksharaNexus team and is tied to your email address. Each code can only be used once.</p>
+                </div>
+
+                <button class="btn-register" id="btn" type="submit">Create account</button>
+            </form>
+        </div>
+
+        <div class="card-footer">
+            Already have an account? <a href="login.html">Sign in</a>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { register, isLoggedIn } from './api.js';
+
+    // Already logged in — no need to register
+    if (isLoggedIn()) window.location.href = 'dashboard.html';
+
+    const form        = document.getElementById('form');
+    const btn         = document.getElementById('btn');
+    const err         = document.getElementById('err');
+    const formSection = document.getElementById('form-section');
+    const successState = document.getElementById('success-state');
+
+    function showError(msg) {
+        err.textContent = msg;
+        err.classList.add('show');
+    }
+    function hideError() {
+        err.classList.remove('show');
+    }
+
+    form.addEventListener('submit', async () => {
+        hideError();
+
+        const firstName = document.getElementById('firstName').value.trim();
+        const lastName  = document.getElementById('lastName').value.trim();
+        const email     = document.getElementById('email').value.trim();
+        const password  = document.getElementById('password').value;
+        const code      = document.getElementById('code').value.trim();
+
+        // Client-side validation
+        if (!firstName) { showError('First name is required.'); return; }
+        if (!email)     { showError('Email address is required.'); return; }
+        if (password.length < 8) { showError('Password must be at least 8 characters.'); return; }
+        if (!code)      { showError('Registration code is required.'); return; }
+
+        btn.disabled = true;
+        btn.textContent = 'Creating account…';
+
+        try {
+            await register(firstName, lastName, email, password, code);
+            // Show success screen, hide form
+            formSection.classList.add('hidden');
+            successState.classList.add('show');
+        } catch(e) {
+            showError(e.message || 'Registration failed. Please check your details and code.');
+            btn.disabled = false;
+            btn.textContent = 'Create account';
+        }
+    });
+</script>
+</body>
+</html>
