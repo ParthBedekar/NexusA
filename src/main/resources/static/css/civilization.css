@@ -778,3 +778,118 @@ select {
 
     .nav { padding: 0 16px; }
 }
+
+/* ─── Fourth column: review feed ─── */
+.col-marks {
+    width: 260px;
+    min-width: 260px;
+    border-left: 1px solid var(--rule);
+    background: var(--card);
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+/* Update civ-shell to support 4 columns when marks are present */
+.civ-shell:has(.col-marks[style*="flex"]) {
+    grid-template-columns: var(--col-left) 1fr var(--col-right) 260px;
+}
+
+/* ─── Entry mark badges in tree ─── */
+.mark-badge {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.mark-badge-approved { background: #D1FAE5; color: #065F46; }
+.mark-badge-rejected { background: #FEE2E2; color: #991B1B; }
+.mark-badge-revision { background: #FEF3C7; color: #92400E; }
+
+/* ─── Feed items ─── */
+.feed-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--rule);
+    border-left: 3px solid transparent;
+    transition: background 0.1s;
+}
+.feed-item:last-child { border-bottom: none; }
+.feed-item-approved  { border-left-color: #10B981; }
+.feed-item-rejected  { border-left-color: #EF4444; }
+.feed-item-revision  { border-left-color: #F59E0B; }
+
+.feed-item-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    margin-bottom: 4px;
+}
+.feed-icon {
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+    width: 14px;
+}
+.feed-item-approved  .feed-icon { color: #10B981; }
+.feed-item-rejected  .feed-icon { color: #EF4444; }
+.feed-item-revision  .feed-icon { color: #F59E0B; }
+
+.feed-entry-title {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.4;
+}
+.feed-status {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin-bottom: 5px;
+    margin-left: 21px;
+}
+.feed-note {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-style: italic;
+    line-height: 1.5;
+    margin-left: 21px;
+    margin-bottom: 5px;
+    padding: 6px 10px;
+    background: var(--bg);
+    border-radius: 3px;
+    border-left: 2px solid var(--rule);
+}
+.feed-meta {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--faint);
+    margin-left: 21px;
+}
+
+/* ─── Version list cleanup ─── */
+.v-needs-review {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--amber, #92600A);
+    margin-top: 3px;
+}
+
+/* ─── Responsive: hide marks panel on narrow screens ─── */
+@media (max-width: 1200px) {
+    .col-marks { display: none !important; }
+    /* ADD: */
+    .col-marks { display: none; flex-direction: column; }
+    .col-marks.col-marks-visible { display: flex; }
+    .civ-shell:has(.col-marks-visible) {
+        grid-template-columns: var(--col-left) 1fr var(--col-right) 260px;
+    }
+}

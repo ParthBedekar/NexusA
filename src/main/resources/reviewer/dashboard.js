@@ -3,10 +3,11 @@ import {
     getAllLatestVersions,
     getMyMarks, markEntry,
     getCentralCivilizations, getCentralDetail,
-    createCentralCivilization, addVolume, addEntry, flagDivergence,
-    getCivMetadata
+    createCentralCivilization, addVolume, addEntry, addEntriesBatch,
+    deleteEntry, deleteVolume,
+    flagDivergence, getCivMetadata,deleteMark
 } from './api.js';
-
+let isBatchMode = false;
 // ── Auth Guard ────────────────────────────────────────────────────────────
 if (!isLoggedIn()) { window.location.href = 'login.html'; }
 
@@ -18,7 +19,7 @@ let currentVolId                = null;
 let approvedMarks               = [];
 let selectedEntriesForDivergence = [];   // Track entries selected for conflict marking
 let selectedCivMetadata         = null;
-
+let selectedMarkIds = new Set();
 // ── JWT Payload Extraction ────────────────────────────────────────────────
 function decodeJwt(token) {
     try {
@@ -150,10 +151,10 @@ function openVersionDetail(versionId, civTitle) {
 
 document.getElementById('btn-refresh-civs').addEventListener('click', loadCivilizations);
 
-// ── Review Audit Footprint (Granular Entry Ledger) ───────────────────────
 async function loadMarks() {
     const el = document.getElementById('marks-list');
     el.innerHTML = skeleton();
+    selectedMarkIds.clear();
     try {
         const marks = await getMyMarks();
         document.getElementById('stat-marks').textContent = marks.length;
@@ -161,12 +162,97 @@ async function loadMarks() {
             el.innerHTML = emptyState('✓', 'Audit ledger empty', 'Granular decisions will appear here as you verify individual nodes.');
             return;
         }
-        el.innerHTML = marks.map(m => markRow(m)).join('');
+
+        const toolbar = `
+        <div class="marks-toolbar" id="marks-toolbar">
+            <label class="marks-select-all-wrap">
+                <input type="checkbox" id="marks-select-all">
+                <span>Select all</span>
+            </label>
+            <button class="btn-delete-selected" id="btn-delete-selected" disabled>
+                Delete selected (<span id="selected-count">0</span>)
+            </button>
+        </div>`;
+
+        el.innerHTML = toolbar + marks.map(m => markRow(m)).join('');
+
+        // ── Select all ────────────────────────────────────────────────────
+        document.getElementById('marks-select-all').addEventListener('change', e => {
+            const checked = e.target.checked;
+            document.querySelectorAll('.mark-row-checkbox').forEach(cb => {
+                cb.checked = checked;
+                const markId = cb.dataset.markId;
+                checked ? selectedMarkIds.add(markId) : selectedMarkIds.delete(markId);
+            });
+            syncDeleteButton();
+        });
+
+        // ── Per-row checkboxes ────────────────────────────────────────────
+        document.querySelectorAll('.mark-row-checkbox').forEach(cb => {
+            cb.addEventListener('change', e => {
+                e.target.checked
+                    ? selectedMarkIds.add(cb.dataset.markId)
+                    : selectedMarkIds.delete(cb.dataset.markId);
+
+                // sync select-all state
+                const all  = document.querySelectorAll('.mark-row-checkbox');
+                const allChecked = [...all].every(c => c.checked);
+                const noneChecked = [...all].every(c => !c.checked);
+                const selectAllCb = document.getElementById('marks-select-all');
+                selectAllCb.checked = allChecked;
+                selectAllCb.indeterminate = !allChecked && !noneChecked;
+
+                syncDeleteButton();
+            });
+        });
+
+        // ── Single-row delete buttons ─────────────────────────────────────
+        document.querySelectorAll('.btn-delete-mark').forEach(btn => {
+            btn.addEventListener('click', async e => {
+                e.stopPropagation();
+                if (!confirm('Delete this mark?')) return;
+                try {
+                    await deleteMark(btn.dataset.markId);
+                    toast('Mark deleted', 'success');
+                    loadMarks();
+                } catch (err) {
+                    toast(err.message, 'error');
+                }
+            });
+        });
+
+        // ── Bulk delete button ────────────────────────────────────────────
+        document.getElementById('btn-delete-selected').addEventListener('click', async () => {
+            if (!selectedMarkIds.size) return;
+            if (!confirm(`Delete ${selectedMarkIds.size} mark${selectedMarkIds.size > 1 ? 's' : ''}? This cannot be undone.`)) return;
+
+            const btn = document.getElementById('btn-delete-selected');
+            btn.disabled = true;
+            btn.textContent = 'Deleting…';
+
+            const ids = [...selectedMarkIds];
+            const results = await Promise.allSettled(ids.map(id => deleteMark(id)));
+
+            const failed  = results.filter(r => r.status === 'rejected').length;
+            const deleted = results.filter(r => r.status === 'fulfilled').length;
+
+            toast(`${deleted} mark${deleted !== 1 ? 's' : ''} deleted${failed ? `, ${failed} failed` : ''}`,
+                failed ? 'info' : 'success');
+            loadMarks();
+        });
+
     } catch (e) {
         el.innerHTML = emptyState('⚠', 'Failed to load ledger', e.message);
     }
 }
 
+function syncDeleteButton() {
+    const btn = document.getElementById('btn-delete-selected');
+    if (!btn) return;
+    const count = selectedMarkIds.size;
+    btn.disabled = count === 0;
+    document.getElementById('selected-count').textContent = count;
+}
 function markRow(m) {
     const statusColors = {
         APPROVED:           'background:#D1FAE5;color:#065F46;border:1px solid #A7F3D0',
@@ -175,19 +261,21 @@ function markRow(m) {
     };
     const style = statusColors[m.markStatus] || '';
     return `
-    <div class="version-row readonly">
+    <div class="version-row readonly mark-row" data-mark-id="${m.markId}">
+      <input type="checkbox" class="mark-row-checkbox" data-mark-id="${m.markId}"
+             style="flex-shrink:0;width:15px;height:15px;cursor:pointer"
+             onclick="event.stopPropagation()">
       <div class="version-main">
-        <div class="version-civ-name">${m.entryTitle || 'Untitled Document/Node'}</div>
+        <div class="version-civ-name">${m.entryTitle || 'Untitled Node'}</div>
         <div class="version-meta">
-          <span>Source Block ID: ${(m.nodeId || '').substring(0, 8)}…</span>
-          <span>Audited On: ${fmtDate(m.markedAt)}</span>
-          ${m.reviewerNote ? `<span class="reviewer-note-bubble">Note: ${m.reviewerNote}</span>` : ''}
+          <span>Audited: ${fmtDate(m.markedAt)}</span>
+          ${m.reviewerNote ? `<span>Note: ${m.reviewerNote}</span>` : ''}
         </div>
       </div>
       <span class="status-badge" style="${style}">${m.markStatus.replace(/_/g, ' ')}</span>
+      <button class="icon-btn btn-delete-mark" data-mark-id="${m.markId}" title="Delete mark">✕</button>
     </div>`;
 }
-
 document.getElementById('btn-refresh-marks').addEventListener('click', loadMarks);
 
 // ── Central Master Compiler Index ────────────────────────────────────────
@@ -252,15 +340,23 @@ function renderCentralDetail(civ) {
     const volumes = (civ.volumes || []).map(vol => `
     <div class="volume-block">
       <div class="volume-header">
-        <span class="volume-title">${vol.title}</span>
-        <div style="display:flex;align-items:center;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span class="volume-title">${vol.title}</span>
           <span class="volume-years">${formatYear(vol.startYear)} – ${formatYear(vol.endYear)}</span>
-          <button class="btn-primary" style="padding:5px 12px;font-size:0.78rem" data-add-entry-vol="${vol.volumeId}">+ Link Entry</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn-primary" style="padding:5px 12px;font-size:0.78rem"
+                  data-add-entry-vol="${vol.volumeId}">+ Link Entry</button>
+          <button class="btn-primary" style="padding:5px 12px;font-size:0.78rem;background:#0F766E"
+                  data-batch-add-vol="${vol.volumeId}">+ Batch Link</button>
+          <button class="btn-delete-volume icon-btn"
+                  data-vol-id="${vol.volumeId}"
+                  title="Delete volume and all its entries">🗑</button>
         </div>
       </div>
       ${vol.entries && vol.entries.length
-        ? vol.entries.map(e => entryRow(e)).join('')
-        : '<div style="padding:14px 16px;color:var(--faint);font-size:0.82rem;font-style:italic">No cross-institutional entries linked to this phase yet.</div>'}
+        ? vol.entries.map(e => entryRow(e, civ.centralCivId, vol.volumeId)).join('')
+        : '<div style="padding:14px 16px;color:var(--faint);font-size:0.82rem;font-style:italic">No entries linked yet.</div>'}
     </div>`).join('');
 
     return `
@@ -268,65 +364,133 @@ function renderCentralDetail(civ) {
       <div>
         <h2 class="detail-title">${civ.title}</h2>
         <div class="detail-meta">
-          <span>System Scope: ${formatYear(civ.startYear)} – ${formatYear(civ.endYear)}</span>
+          <span>${formatYear(civ.startYear)} – ${formatYear(civ.endYear)}</span>
           <span>Curator: ${civ.createdByName || '—'}</span>
-          <span>Last Core Compilation: ${fmtDate(civ.lastUpdatedAt)}</span>
+          <span>Last updated: ${fmtDate(civ.lastUpdatedAt)}</span>
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn-primary" id="btn-add-volume">+ Add Phase/Volume</button>
-        <button class="btn-primary" style="background:#4B5563;opacity:0.6;cursor:not-allowed" id="btn-flag-div" disabled>⚑ Flag Divergence (Select 2)</button>
+        <button class="btn-primary" id="btn-add-volume">+ Add Volume</button>
+        <button class="btn-primary"
+                style="background:#4B5563;opacity:0.6;cursor:not-allowed"
+                id="btn-flag-div" disabled>⚑ Flag Divergence (Select 2)</button>
       </div>
     </div>
-    ${civ.description ? `<p class="central-detail-description-block">${civ.description}</p>` : ''}
+    ${civ.description ? `<p class="central-detail-description-block" style="margin-bottom:20px;color:var(--muted);font-size:0.875rem;line-height:1.6">${civ.description}</p>` : ''}
     <div class="detail-section">
-      <div class="section-context-bar">
-        <span class="section-label">Compiled Chronology Ledger</span>
-        <small style="color:var(--faint);font-size:0.75rem">Select two entry rows below to flag conflicting data weights.</small>
+      <div class="section-context-bar" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span class="section-label">Compiled Chronology — oldest to newest</span>
+        <small style="color:var(--faint);font-size:0.75rem">Select two entries to flag a divergence.</small>
       </div>
-      ${volumes || emptyState('📚', 'No volumes mapped', 'Define chronological framework parameters to begin schema construction.')}
+      ${volumes || emptyState('📚', 'No volumes', 'Add a volume to begin building the chronology.')}
     </div>`;
 }
-
-function entryRow(e) {
-    const divBadge = e.isDivergent ? `<span class="divergence-badge">⚑ Divergent Context</span>` : '';
-
-    // Fallback chain ensuring a descriptive name is ALWAYS rendered instead of a generic string
-    const humanReadableTitle = e.entryTitle || e.title || e.nodeTitle || 'Unnamed Timeline Node';
+function entryRow(e, civId, volId) {
+    const divBadge = e.isDivergent
+        ? `<span class="divergence-badge">⚑ Divergent</span>` : '';
+    const title = e.title || e.entryTitle || 'Unnamed Node';
+    const years = (e.startYear != null || e.endYear != null)
+        ? `${formatYear(e.startYear)} – ${formatYear(e.endYear)}`
+        : '<span style="color:var(--faint);font-style:italic">No date range</span>';
 
     return `
-    <div class="entry-row dynamic-selectable-entry" data-entry-id="${e.entryId}" data-entry-title="${escapeAttr(humanReadableTitle)}">
+    <div class="entry-row dynamic-selectable-entry"
+         data-entry-id="${e.centralEntryId}"
+         data-entry-title="${escapeAttr(title)}"
+         data-civ-id="${civId}"
+         data-vol-id="${volId}">
       <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1">
-         <input type="checkbox" class="divergence-selector-checkbox" style="pointer-events:none;">
-         <span class="entry-title" style="font-weight:500;">${humanReadableTitle}</span>
+        <input type="checkbox" class="divergence-selector-checkbox" style="pointer-events:none;">
+        <div style="min-width:0">
+          <div class="entry-title">${title}</div>
+          <div style="font-family:var(--mono);font-size:0.68rem;color:var(--faint);margin-top:2px">
+            ${years}
+          </div>
+        </div>
       </div>
-      <span class="entry-meta">${formatYear(e.startYear)} – ${formatYear(e.endYear)}</span>
+      <span class="entry-meta">${e.sourceUniversityName || 'Unknown Institution'}</span>
       ${divBadge}
-      <span class="provenance-tag" title="Source Dataset Provenance">${e.sourceUniversityName || 'Institutional Branch'}</span>
+      <button class="btn-delete-entry icon-btn"
+              data-entry-id="${e.centralEntryId}"
+              data-civ-id="${civId}"
+              data-vol-id="${volId}"
+              title="Remove entry from archive">✕</button>
     </div>`;
 }
-
 function wireCentralDetailButtons(civ) {
-    document.getElementById('btn-add-volume').addEventListener('click', () => openModal('modal-add-volume'));
+    document.getElementById('btn-add-volume').addEventListener('click', () =>
+        openModal('modal-add-volume'));
 
+    // ── Delete entry buttons ──────────────────────────────────────────────
+    document.querySelectorAll('.btn-delete-entry').forEach(btn => {
+        btn.addEventListener('click', async e => {
+            e.stopPropagation();
+            if (!confirm('Remove this entry from the archive?')) return;
+            const { entryId, civId, volId } = btn.dataset;
+            try {
+                await deleteEntry(civId, volId, entryId);
+                toast('Entry removed from archive', 'success');
+                openCentralDetail(currentCivId);
+            } catch (err) {
+                toast(err.message, 'error');
+            }
+        });
+    });
+
+    // ── Delete volume buttons ─────────────────────────────────────────────
+    document.querySelectorAll('.btn-delete-volume').forEach(btn => {
+        btn.addEventListener('click', async e => {
+            e.stopPropagation();
+            if (!confirm('Delete this volume and ALL its entries? This cannot be undone.')) return;
+            try {
+                await deleteVolume(currentCivId, btn.dataset.volId);
+                toast('Volume deleted', 'success');
+                openCentralDetail(currentCivId);
+            } catch (err) {
+                toast(err.message, 'error');
+            }
+        });
+    });
+
+    // ── Single entry link buttons ─────────────────────────────────────────
+    document.querySelectorAll('[data-add-entry-vol]').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            currentVolId = btn.dataset.addEntryVol;
+            isBatchMode = false;
+            openAddEntryModal();
+        });
+    });
+
+    // ── Batch link buttons ────────────────────────────────────────────────
+    document.querySelectorAll('[data-batch-add-vol]').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            currentVolId = btn.dataset.batchAddVol;
+            isBatchMode = true;
+            openAddEntryModal();
+        });
+    });
+
+    // ── Divergence selector + flag button (unchanged logic, kept here) ────
     const divergenceSubmitBtn = document.getElementById('btn-flag-div');
     divergenceSubmitBtn.addEventListener('click', () => {
         if (selectedEntriesForDivergence.length === 2) {
             openModal('modal-flag-divergence');
-            document.getElementById('div-primary-id').value = selectedEntriesForDivergence[0].id;
+            document.getElementById('div-primary-id').value   = selectedEntriesForDivergence[0].id;
             document.getElementById('div-primary-name').textContent = selectedEntriesForDivergence[0].title;
-            document.getElementById('div-conflict-id').value = selectedEntriesForDivergence[1].id;
+            document.getElementById('div-conflict-id').value  = selectedEntriesForDivergence[1].id;
             document.getElementById('div-conflict-name').textContent = selectedEntriesForDivergence[1].title;
         }
     });
 
-    // Granular Row Selector Logic for Contextual Multi-Selection
     document.querySelectorAll('.dynamic-selectable-entry').forEach(row => {
-        row.addEventListener('click', () => {
-            const entryId = row.dataset.entryId;
+        row.addEventListener('click', e => {
+            if (e.target.classList.contains('btn-delete-entry')) return;
+            const entryId    = row.dataset.entryId;
             const entryTitle = row.dataset.entryTitle;
-            const checkbox = row.querySelector('.divergence-selector-checkbox');
-            const existingIndex = selectedEntriesForDivergence.findIndex(item => item.id === entryId);
+            const checkbox   = row.querySelector('.divergence-selector-checkbox');
+            const existingIndex = selectedEntriesForDivergence.findIndex(i => i.id === entryId);
 
             if (existingIndex > -1) {
                 selectedEntriesForDivergence.splice(existingIndex, 1);
@@ -334,7 +498,7 @@ function wireCentralDetailButtons(civ) {
                 if (checkbox) checkbox.checked = false;
             } else {
                 if (selectedEntriesForDivergence.length >= 2) {
-                    toast('Divergence maps link two conflicting nodes. Deselect an entry first.', 'info');
+                    toast('Deselect an entry first.', 'info');
                     return;
                 }
                 selectedEntriesForDivergence.push({ id: entryId, title: entryTitle });
@@ -342,148 +506,149 @@ function wireCentralDetailButtons(civ) {
                 if (checkbox) checkbox.checked = true;
             }
 
-            // Sync structural status flags on control panel
-            if (selectedEntriesForDivergence.length === 2) {
+            const count = selectedEntriesForDivergence.length;
+            if (count === 2) {
                 divergenceSubmitBtn.removeAttribute('disabled');
-                divergenceSubmitBtn.style.background = 'var(--rev-ink)';
-                divergenceSubmitBtn.style.opacity = '1';
-                divergenceSubmitBtn.style.cursor = 'pointer';
+                divergenceSubmitBtn.style.cssText = 'background:var(--rev-ink);opacity:1;cursor:pointer';
                 divergenceSubmitBtn.textContent = '⚑ Flag Divergence';
             } else {
                 divergenceSubmitBtn.setAttribute('disabled', 'true');
-                divergenceSubmitBtn.style.background = '#4B5563';
-                divergenceSubmitBtn.style.opacity = '0.6';
-                divergenceSubmitBtn.style.cursor = 'not-allowed';
-                divergenceSubmitBtn.textContent = `⚑ Flag Divergence (${selectedEntriesForDivergence.length}/2 Select)`;
+                divergenceSubmitBtn.style.cssText = 'background:#4B5563;opacity:0.6;cursor:not-allowed';
+                divergenceSubmitBtn.textContent = `⚑ Flag Divergence (${count}/2)`;
             }
         });
     });
-
-    document.querySelectorAll('[data-add-entry-vol]').forEach(btn => {
-        btn.addEventListener('click', e => {
-            e.stopPropagation();
-            currentVolId = btn.dataset.addEntryVol;
-            openAddEntryModal();
-        });
-    });
 }
-
 // ── Chronology Compiler: Map Approved Elements (Scoped Filter) ───────────
 // ── Chronology Compiler: Map Approved Elements (Scoped Filter) ───────────
 async function openAddEntryModal() {
-    openModal('modal-add-entry');
+    const modalTitle = document.querySelector('#modal-add-entry .modal-title');
+    if (modalTitle) modalTitle.textContent = isBatchMode
+        ? 'Batch Link Approved Entries' : 'Link Approved Entry to Archive';
 
-    // Clear out position parameters (the strict ID fields are removed or hidden)
+    openModal('modal-add-entry');
     document.getElementById('entry-position').value = '';
 
     const listEl = document.getElementById('approved-marks-list');
-    listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--faint);font-size:0.82rem">Reading approved institutional cache…</div>';
+    listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--faint);font-size:0.82rem">Loading approved entries…</div>';
 
     try {
         const marks = await getMyMarks();
-        console.log("Raw Marks Data Stream from Backend:", marks); // Diagnostic Log
+        const allApproved = marks.filter(m => m.markStatus?.toUpperCase() === 'APPROVED');
 
-        const targetTitle = (currentCivTitle || '').toLowerCase().trim();
-
-        // Filter out status configurations seamlessly
-        approvedMarks = marks.filter(m => {
-            if (!m.markStatus) return false;
-
-            const isApproved = m.markStatus.toUpperCase() === 'APPROVED';
-
-            const matchesContext = !targetTitle ||
-                (m.entryTitle || '').toLowerCase().includes(targetTitle) ||
-                (m.civTitle || '').toLowerCase().includes(targetTitle) ||
-                (m.civilizationName || '').toLowerCase().includes(targetTitle);
-
-            return isApproved && matchesContext;
-        });
-
-        // FALLBACK: If filtering hid valid nodes, show all approved items to prevent deadlocks
-        if (!approvedMarks.length && marks.some(m => m.markStatus?.toUpperCase() === 'APPROVED')) {
-            console.warn("Context filter hidden items. Falling back to all approved nodes.");
-            approvedMarks = marks.filter(m => m.markStatus.toUpperCase() === 'APPROVED');
-        }
+        approvedMarks = allApproved.length ? allApproved : [];
 
         if (!approvedMarks.length) {
-            listEl.innerHTML = `
-                <div style="padding:20px;text-align:center;color:var(--faint);font-size:0.82rem">
-                    No approved timeline modifications match <strong>"${currentCivTitle || 'Active Civ'}"</strong>.<br>
-                    <small style="display:block;margin-top:6px;color:var(--faint)">Audit incoming university datasets for this civilization first.</small>
-                </div>`;
+            listEl.innerHTML = `<div style="padding:24px;text-align:center;color:var(--faint);font-size:0.82rem">
+                No approved entries found. Mark entries as Approved on a civilization's review page first.</div>`;
             return;
         }
 
-        // Render clean structural row cards - versionId and nodeId strings completely stripped from view
-        listEl.innerHTML = approvedMarks.map((m, i) => `
-            <div class="browser-row" data-idx="${i}" style="padding: 10px; border-bottom: 1px solid var(--rule); cursor: pointer;">
-                <div style="flex:1;min-width:0">
-                    <div style="font-size:0.875rem;font-weight:500;color:var(--ink)">${m.entryTitle || m.title || 'Untitled Record'}</div>
-                    <div style="font-size:0.75rem;color:var(--faint);margin-top:2px">
-                        Validated and Cleared via Institutional Footprint Ledger
-                    </div>
+        const hint = isBatchMode
+            ? '<div style="padding:8px 12px;background:var(--teal-bg);border-bottom:1px solid var(--rule);font-size:0.78rem;color:var(--teal)">Click to select multiple entries. All selected will be added to this volume.</div>'
+            : '';
+
+        listEl.innerHTML = hint + approvedMarks.map((m, i) => `
+            <div class="browser-row approved-entry-pick-row" data-idx="${i}" style="flex-direction:column;align-items:flex-start;gap:6px;padding:14px 16px">
+              <div style="display:flex;width:100%;align-items:center;gap:10px">
+                ${isBatchMode ? `<input type="checkbox" class="batch-checkbox" style="flex-shrink:0;width:15px;height:15px">` : ''}
+                <div style="font-size:0.9rem;font-weight:500;color:var(--ink);flex:1">${m.entryTitle || 'Untitled Entry'}</div>
+                <span style="font-family:var(--mono);font-size:0.65rem;background:var(--pub-bg);color:var(--pub-ink);padding:2px 8px;border-radius:3px;flex-shrink:0">APPROVED</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;width:100%;padding-left:${isBatchMode ? '25px' : '0'}">
+                <div style="font-family:var(--mono);font-size:0.72rem;color:var(--faint)">
+                  <span style="color:var(--teal)">Civilization</span><br>
+                  ${m.civTitle || '—'}
                 </div>
-                <span style="font-family:var(--mono);font-size:0.65rem;background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:3px;flex-shrink:0">VALIDATED MATCH</span>
+                <div style="font-family:var(--mono);font-size:0.72rem;color:var(--faint)">
+                  <span style="color:var(--teal)">Institution</span><br>
+                  ${m.universityName || '—'}
+                </div>
+                <div style="font-family:var(--mono);font-size:0.72rem;color:var(--faint)">
+                  <span style="color:var(--teal)">Period</span><br>
+                  ${m.civStartYear != null ? formatYear(m.civStartYear) + ' – ' + formatYear(m.civEndYear) : '—'}
+                </div>
+                <div style="font-family:var(--mono);font-size:0.72rem;color:var(--faint)">
+                  <span style="color:var(--teal)">Committed by</span><br>
+                  ${m.committedByName || '—'}
+                </div>
+              </div>
+              ${m.reviewerNote ? `<div style="font-size:0.75rem;color:var(--muted);font-style:italic;padding-left:${isBatchMode ? '25px' : '0'}">Note: ${m.reviewerNote}</div>` : ''}
             </div>`).join('');
 
-        // Selection interaction handler
-        listEl.querySelectorAll('.browser-row').forEach(row => {
+        listEl.querySelectorAll('.approved-entry-pick-row').forEach(row => {
             row.addEventListener('click', () => {
-                listEl.querySelectorAll('.browser-row').forEach(r => r.classList.remove('selected'));
-                row.classList.add('selected');
-
-                // Set inline selection highlight styling
-                row.style.background = 'rgba(6, 95, 70, 0.05)';
-
-                // Store selected tracking object reference seamlessly into parent context scope
-                const chosenMarkIndex = parseInt(row.dataset.idx, 10);
-                row.dataset.selectedMarkIndex = chosenMarkIndex;
+                if (isBatchMode) {
+                    row.classList.toggle('selected');
+                    const cb = row.querySelector('.batch-checkbox');
+                    if (cb) cb.checked = row.classList.contains('selected');
+                } else {
+                    listEl.querySelectorAll('.approved-entry-pick-row').forEach(r => r.classList.remove('selected'));
+                    row.classList.add('selected');
+                }
             });
         });
     } catch (e) {
-        console.error("Error executing layout generation loop:", e);
-        listEl.innerHTML = `<div style="padding:16px;color:#991B1B;font-size:0.82rem">${e.message}</div>`;
+        listEl.innerHTML = `<div style="padding:16px;color:var(--rej-ink);font-size:0.82rem">${e.message}</div>`;
     }
 }
 
 document.getElementById('btn-submit-entry').addEventListener('click', async () => {
-    const selectedRow = document.querySelector('.browser-row.selected');
-
-    if (!selectedRow) {
-        toast('Select an approved entry from the list to link', 'error');
-        return;
-    }
-
-    const m = approvedMarks[parseInt(selectedRow.dataset.idx, 10)];
-
-    if (!m) {
-        toast('Could not resolve selected entry. Please try again.', 'error');
-        return;
-    }
-
-    const positionInput = document.getElementById('entry-position').value.trim();
-
     const btn = document.getElementById('btn-submit-entry');
-    btn.disabled = true;
-    btn.textContent = 'Linking Block…';
+    const position = parseInt(document.getElementById('entry-position').value) || 1;
 
-    try {
-        const dto = {
-            sourceVersionId: m.versionId,
-            sourceNodeId:    m.nodeId,
-            position:        positionInput ? parseInt(positionInput, 10) : 1,
-        };
+    if (isBatchMode) {
+        const selectedRows = [...document.querySelectorAll('.approved-entry-pick-row.selected')];
+        if (!selectedRows.length) { toast('Select at least one entry', 'error'); return; }
 
-        await addEntry(currentCivId, currentVolId, dto);
+        btn.disabled = true;
+        btn.textContent = 'Linking…';
+        try {
+            const entries = selectedRows.map((row, idx) => {
+                const m = approvedMarks[parseInt(row.dataset.idx, 10)];
+                return {
+                    sourceVersionId: m.versionId,
+                    sourceNodeId:    m.nodeId,
+                    position:        position + idx,
+                };
+            });
+            const result = await addEntriesBatch(currentCivId, currentVolId, { entries });
+            const added  = result.addedEntryIds?.length || 0;
+            const failed = result.failures?.length || 0;
+            toast(`${added} entr${added !== 1 ? 'ies' : 'y'} linked${failed ? `, ${failed} failed` : ''}`,
+                failed ? 'info' : 'success');
+            if (failed) result.failures.forEach(f => console.warn('Batch fail:', f.nodeId, f.reason));
+            closeModal('modal-add-entry');
+            openCentralDetail(currentCivId);
+        } catch (e) {
+            toast(e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Add to Archive';
+        }
+    } else {
+        const selectedRow = document.querySelector('.approved-entry-pick-row.selected');
+        if (!selectedRow) { toast('Select an entry from the list', 'error'); return; }
+        const m = approvedMarks[parseInt(selectedRow.dataset.idx, 10)];
+        if (!m) { toast('Could not resolve entry. Try again.', 'error'); return; }
 
-        toast('Entry linked to archive successfully', 'success');
-        closeModal('modal-add-entry');
-        openCentralDetail(currentCivId);
-    } catch (e) {
-        toast(e.message, 'error');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'Add to Archive';
+        btn.disabled = true;
+        btn.textContent = 'Linking…';
+        try {
+            await addEntry(currentCivId, currentVolId, {
+                sourceVersionId: m.versionId,
+                sourceNodeId:    m.nodeId,
+                position,
+            });
+            toast('Entry linked successfully', 'success');
+            closeModal('modal-add-entry');
+            openCentralDetail(currentCivId);
+        } catch (e) {
+            toast(e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Add to Archive';
+        }
     }
 });
 
@@ -514,30 +679,35 @@ searchInput.addEventListener('input', () => {
         try {
             pickerEl.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--faint);">Searching university records...</div>';
             pickerEl.style.display = 'block';
-            
+
             const results = await getCivMetadata(query);
             if (!results || results.length === 0) {
                 pickerEl.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--faint); font-size: 0.85rem;">No matching university submissions found for "${query}"</div>`;
                 selectedCivMetadata = null;
                 return;
             }
-            
+
             pickerEl.innerHTML = `
                 <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--faint); font-weight: 500; margin-bottom: 8px; font-family: var(--mono);">Select University Source Version</div>
                 <div class="metadata-card-grid">
-                    ${results.map((r, idx) => `
-                        <div class="metadata-card" data-idx="${idx}">
-                            <div class="metadata-card-header">
-                                <span class="metadata-card-uni">${r.universityName || 'Unknown University'}</span>
-                                <span class="metadata-card-years">${formatYear(r.startYear)} – ${formatYear(r.endYear)}</span>
-                            </div>
-                            <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; color: var(--ink);">${r.title}</div>
-                            <p class="metadata-card-desc">${r.description || '<em>No description provided.</em>'}</p>
+                    ${results.map((r, idx) => // Inside the results.map() in the searchInput event handler, replace the card template:
+                `<div class="metadata-card" data-idx="${idx}">
+                        <div class="metadata-card-header">
+                            <span class="metadata-card-uni">${r.universityName || 'Unknown University'}</span>
+                            <span class="metadata-card-years">${formatYear(r.startYear)} – ${formatYear(r.endYear)}</span>
                         </div>
-                    `).join('')}
+                        <div style="font-weight:600;font-size:0.9rem;margin-bottom:4px;color:var(--ink)">${r.title}</div>
+                        <p class="metadata-card-desc">${r.description || '<em>No description provided.</em>'}</p>
+                        <div class="metadata-card-detail">
+                            <div class="metadata-card-detail-item"><span>Institution</span>${r.universityName || '—'}</div>
+                            <div class="metadata-card-detail-item"><span>Period</span>${formatYear(r.startYear)} – ${formatYear(r.endYear)}</div>
+                            <div class="metadata-card-detail-item"><span>Submitted entries</span>${r.entryCount ?? '—'}</div>
+                            <div class="metadata-card-detail-item"><span>Civilization ID</span>Internal reference only</div>
+                        </div>
+                    </div>`).join('')}
                 </div>
             `;
-            
+
             // Add click listener to cards
             pickerEl.querySelectorAll('.metadata-card').forEach(card => {
                 card.addEventListener('click', () => {
@@ -547,7 +717,7 @@ searchInput.addEventListener('input', () => {
                     selectedCivMetadata = results[idx];
                 });
             });
-            
+
         } catch (e) {
             pickerEl.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--rej-ink); font-size: 0.85rem;">Failed to fetch records: ${e.message}</div>`;
             selectedCivMetadata = null;

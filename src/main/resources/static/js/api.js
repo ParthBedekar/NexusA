@@ -222,6 +222,8 @@ const CivAPI = {
     async submitForReview(civId, versionId) {
         return apiFetch(`/civilization/${civId}/version/${versionId}/submit`, { method: 'PATCH' });
     },
+    // Add inside CivAPI object:
+    async getEntryMarks(civId) { return apiFetch(`/civilization/${civId}/entry-marks`); },
 };
 
 // ── Toast System ──────────────────────────────────────────────────────────────

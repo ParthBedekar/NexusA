@@ -14,4 +14,7 @@ public interface EntryReviewMarkRepository extends JpaRepository<EntryReviewMark
             UUID reviewerId, UUID versionId, String nodeId);
     boolean existsByReviewer_ReviewerIdAndVersion_VersionIdAndNodeId(
             UUID reviewerId, UUID versionId, String nodeId);
+    void deleteByMarkIdAndReviewer_ReviewerId(UUID markId, UUID reviewerId);
+    boolean existsByMarkIdAndReviewer_ReviewerId(UUID markId, UUID reviewerId);
+    List<EntryReviewMark> findByVersion_Civilization_CivId(UUID civId);
 }

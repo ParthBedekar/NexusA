@@ -2055,4 +2055,131 @@ a { color: inherit; text-decoration: none; }
     color: var(--rev-ink);
 }
 
+/* ── Wide modal variant ───────────────────────────────────────────────────── */
+.modal-wide {
+    max-width: 680px;
+}
 
+/* ── Entry picker list ────────────────────────────────────────────────────── */
+.entry-pick-list {
+    max-height: 420px;
+    overflow-y: auto;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+}
+
+.approved-entry-pick-row {
+    border-bottom: 1px solid var(--rule);
+    cursor: pointer;
+    transition: background 0.13s;
+}
+.approved-entry-pick-row:last-child { border-bottom: none; }
+.approved-entry-pick-row:hover      { background: var(--bg); }
+.approved-entry-pick-row.selected   { background: var(--teal-dim); }
+
+/* ── Icon delete/action buttons ───────────────────────────────────────────── */
+.icon-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--faint);
+    border-radius: 5px;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.13s, border-color 0.13s, color 0.13s;
+    line-height: 1;
+}
+.icon-btn:hover {
+    background: var(--rej-bg);
+    border-color: #FECACA;
+    color: var(--rej-ink);
+}
+
+/* ── Metadata picker — taller, scrollable ─────────────────────────────────── */
+.metadata-card-grid {
+    max-height: 400px; /* override the old 300px */
+}
+
+.metadata-card-header {
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* extra detail row inside metadata card */
+.metadata-card-detail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 12px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--rule);
+}
+
+.metadata-card-detail-item {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--faint);
+    line-height: 1.4;
+}
+
+.metadata-card-detail-item span {
+    display: block;
+    color: var(--teal);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* ── Divergence selected row highlight ────────────────────────────────────── */
+.selected-for-divergence {
+    background: rgba(146, 64, 14, 0.05) !important;
+    outline: 1px solid #FCD34D;
+}
+
+/* ── Marks toolbar ────────────────────────────────────────────────────────── */
+.marks-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    max-width: 860px;
+}
+
+.marks-select-all-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+}
+
+.marks-select-all-wrap input { cursor: pointer; width: 15px; height: 15px; }
+
+.btn-delete-selected {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid #FECACA;
+    color: var(--rej-ink);
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    font-size: 0.82rem;
+    font-family: var(--sans);
+    cursor: pointer;
+    transition: background 0.13s, color 0.13s;
+}
+.btn-delete-selected:hover:not(:disabled) {
+    background: var(--rej-bg);
+}
+.btn-delete-selected:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    border-color: var(--rule);
+    color: var(--faint);
+}

@@ -41,7 +41,52 @@ public class ReviewerController {
             return ResponseEntity.badRequest().build();
         }
     }
+// ── Delete entry from central ─────────────────────────────────────────────
 
+    // ── Delete entry from central ─────────────────────────────────────────────
+    @DeleteMapping("/central/{centralCivId}/volume/{volumeId}/entry/{entryId}")
+    public ResponseEntity<Void> deleteEntry(@PathVariable UUID centralCivId,
+                                            @PathVariable UUID volumeId,
+                                            @PathVariable UUID centralEntryId) {
+        try {
+            centralService.deleteEntry(centralCivId, volumeId, centralEntryId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @DeleteMapping("/central/{centralCivId}/volume/{volumeId}")
+    public ResponseEntity<Void> deleteVolume(@PathVariable UUID centralCivId,
+                                             @PathVariable UUID volumeId) {
+        try {
+            centralService.deleteVolume(centralCivId, volumeId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/central/{centralCivId}/volume/{volumeId}/entries/batch")
+    public ResponseEntity<BatchAddResultDTO> addEntriesBatch(
+            @PathVariable UUID centralCivId,
+            @PathVariable UUID volumeId,
+            @RequestBody BatchAddCentralEntriesDTO dto) {
+        try {
+            return ResponseEntity.ok(centralService.addEntriesBatch(centralCivId, volumeId, dto));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    @DeleteMapping("/entry/mark/{markId}")
+    public ResponseEntity<Void> deleteMark(@PathVariable UUID markId) {
+        try {
+            reviewerService.deleteMark(markId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
     // ── Entry marking (per-entry approve / reject / revision) ────────────────
 
     @PostMapping("/entry/mark")

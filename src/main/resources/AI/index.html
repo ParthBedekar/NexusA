@@ -16,6 +16,7 @@
     </div>
 </nav>
 
+<!-- ── HERO ── -->
 <section class="hero">
     <div class="container">
         <div class="hero-pill">
@@ -23,7 +24,7 @@
             AI-powered historical research
         </div>
         <h1>Ask anything about<br><em>ancient civilizations</em></h1>
-        <p class="hero-sub">Query thousands of years of curated historical records — governance, trade, culture, military, and technology — answered with cited sources.</p>
+        <p class="hero-sub">Query our curated archive of historical records spanning thousands of years — governance, trade, culture, warfare, technology, daily life, and more — answered with cited sources.</p>
         <div class="hero-actions">
             <a href="register.html" class="btn-primary cta-register">Create free account</a>
             <a href="login.html" class="btn-ghost cta-login">Sign in</a>
@@ -37,15 +38,11 @@
                 <span class="stat-value">3,000+</span>
                 <span class="stat-label">Years covered</span>
             </div>
-            <div class="stat-item">
-                <span class="stat-value">6</span>
-                <span class="stat-label">Topic areas</span>
-            </div>
         </div>
     </div>
 </section>
 
-<!-- Auto-scrolling civilization timeline strip -->
+<!-- ── Auto-scrolling civilization timeline strip ── -->
 <div class="timeline-strip" aria-hidden="true">
     <div class="timeline-track" id="timeline-track">
         <div class="timeline-item"><span class="timeline-era">3300 BCE</span><span class="timeline-dot"></span><span class="timeline-civ">Indus Valley Civilization</span></div>
@@ -76,6 +73,7 @@
     </div>
 </div>
 
+<!-- ── EXAMPLE QUERIES ── -->
 <section class="section-white">
     <div class="container">
         <div class="section-label reveal">Try asking</div>
@@ -89,31 +87,54 @@
                 <div class="query-meta"><span class="query-tag">Trade · Mesopotamia</span><span class="query-arrow">→</span></div>
             </a>
             <a href="register.html" class="query-card reveal" style="transition-delay:0.13s">
-                <span class="query-text">Describe military technology in ancient Rome.</span>
-                <div class="query-meta"><span class="query-tag">Military · Rome</span><span class="query-arrow">→</span></div>
+                <span class="query-text">What were the daily lives of women in ancient Rome?</span>
+                <div class="query-meta"><span class="query-tag">Society · Rome</span><span class="query-arrow">→</span></div>
             </a>
             <a href="register.html" class="query-card reveal" style="transition-delay:0.19s">
-                <span class="query-text">What role did religion play in Egyptian society?</span>
-                <div class="query-meta"><span class="query-tag">Culture · Egypt</span><span class="query-arrow">→</span></div>
+                <span class="query-text">How did the Han Dynasty's bureaucracy compare to the Maurya Empire's?</span>
+                <div class="query-meta"><span class="query-tag">Governance · Comparative</span><span class="query-arrow">→</span></div>
             </a>
         </div>
     </div>
 </section>
 
+<!-- ── OPEN-ENDED CAPABILITY SECTION ── -->
 <section class="section-dark">
     <div class="container">
         <div class="section-label reveal">What you can explore</div>
-        <div class="topics-grid">
-            <div class="topic-card reveal"><span class="topic-icon">⚖️</span><div class="topic-title">Governance</div><div class="topic-desc">Laws, rulers, empires, political structure</div></div>
-            <div class="topic-card reveal" style="transition-delay:0.06s"><span class="topic-icon">🏺</span><div class="topic-title">Trade</div><div class="topic-desc">Commerce, routes, merchant networks</div></div>
-            <div class="topic-card reveal" style="transition-delay:0.12s"><span class="topic-icon">⚙️</span><div class="topic-title">Technology</div><div class="topic-desc">Engineering, tools, construction</div></div>
-            <div class="topic-card reveal" style="transition-delay:0.18s"><span class="topic-icon">⚔️</span><div class="topic-title">Military</div><div class="topic-desc">Warfare, armies, conquest, strategy</div></div>
-            <div class="topic-card reveal" style="transition-delay:0.24s"><span class="topic-icon">🎭</span><div class="topic-title">Culture</div><div class="topic-desc">Religion, art, language, and ritual</div></div>
-            <div class="topic-card reveal" style="transition-delay:0.30s"><span class="topic-icon">🏛️</span><div class="topic-title">Society</div><div class="topic-desc">Daily life, class, urban planning</div></div>
+
+        <div class="open-statement reveal">
+            <p>The Oracle draws from <em>everything</em> in the central archive — whatever knowledge our contributors have recorded about a civilization, you can ask about it.</p>
+        </div>
+
+        <!-- Illustrative conversation thread -->
+        <div class="example-thread reveal" style="transition-delay:0.08s">
+            <div class="thread-msg user">
+                How did Phoenician merchants finance long-distance trade?
+            </div>
+            <div class="thread-msg oracle">
+                <span class="oracle-label">Oracle · Phoenicia</span>
+                Phoenician merchants relied on a combination of family partnerships, profit-sharing ventures known as <em>kārū</em>-style contracts, and credit extended by temple institutions. Silver-weight standards allowed cross-regional exchange without coinage. Risk was spread by forming syndicates for individual voyages…
+                <span class="thread-cite">Sources: Aubet (2001) · Markoe (2000) · Heltzer (1978)</span>
+            </div>
+            <div class="thread-msg user">
+                Did they have any kind of insurance against shipwrecks?
+            </div>
+            <div class="thread-msg oracle">
+                <span class="oracle-label">Oracle · Phoenicia</span>
+                Direct evidence is limited, but bottomry loans — where a creditor bore the sea risk in exchange for higher interest — served a similar function. If the ship was lost, the loan was cancelled…
+                <span class="thread-cite">Sources: Heltzer (1978) · Aubet (2001)</span>
+            </div>
+        </div>
+
+        <div class="scope-note reveal" style="transition-delay:0.16s">
+            <span class="scope-note-icon">ℹ</span>
+            <p><strong>Answers reflect the archive.</strong> The Oracle can only discuss what has been recorded and verified by our contributor network. Coverage varies by civilization and period — ask freely, and it will tell you what it knows.</p>
         </div>
     </div>
 </section>
 
+<!-- ── FOOTER CTA ── -->
 <section class="footer-cta">
     <div class="container">
         <div class="footer-cta-inner reveal">
@@ -136,10 +157,25 @@
 <script src="js/api.js"></script>
 <script src="js/landing.js"></script>
 <script>
+    // Redirect logged-in users
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof api !== 'undefined' && api.isLoggedIn()) {
+            document.querySelectorAll('.cta-register').forEach(el => {
+                el.textContent = 'Go to Oracle';
+                el.href = 'chat.html';
+            });
+            document.querySelectorAll('.cta-login').forEach(el => {
+                el.style.display = 'none';
+            });
+        }
+    });
+
     // Scroll reveal
     const revealEls = document.querySelectorAll('.reveal');
     const io = new IntersectionObserver((entries) => {
-        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+        entries.forEach(e => {
+            if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+        });
     }, { threshold: 0.12 });
     revealEls.forEach(el => io.observe(el));
 </script>

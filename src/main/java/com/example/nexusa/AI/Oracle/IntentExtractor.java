@@ -16,7 +16,8 @@ import java.util.stream.Collectors;
 public class IntentExtractor {
 
     private final CentralCivilizationRepository civRepo;
-
+    private static final double FUZZY_THRESHOLD = 0.75; // 0–1, higher = stricter
+    private static final int    MAX_CANDIDATE_LEN = 40;  // ignore very long windows
     private static final Map<String, List<String>> TOPIC_KEYWORDS = Map.of(
             "governance",  List.of("governance", "administration", "ruler", "king", "empire", "law", "political"),
             "trade",       List.of("trade", "commerce", "merchant", "exchange", "goods", "market"),
@@ -75,7 +76,7 @@ public class IntentExtractor {
     private String resolveCivName(String query) {
         String[] tokens = query.split("\\s+");
 
-        // Strategy 1: evaluate ALL windows — longest matching candidate wins
+        // Strategy 1: sliding-window n-gram — longest DB hit wins
         String bestMatch = null;
         int bestCandidateLen = 0;
 
@@ -83,9 +84,7 @@ public class IntentExtractor {
             for (int start = 0; start <= tokens.length - len; start++) {
                 String candidate = String.join(" ", Arrays.copyOfRange(tokens, start, start + len))
                         .replaceAll("[^a-zA-Z0-9 ]", "").trim();
-
                 if (candidate.isBlank()) continue;
-                // Only skip single-token fillers; multi-word candidates always get tried
                 if (len == 1 && QUERY_FILLERS.contains(candidate.toLowerCase())) continue;
 
                 List<CentralCivilization> matches = civRepo.findByTitleContainingIgnoreCase(candidate);
@@ -97,7 +96,7 @@ public class IntentExtractor {
         }
         if (bestMatch != null) return bestMatch;
 
-        // Strategy 2: capitalised sequences (proper nouns) from original query
+        // Strategy 2: capitalised proper-noun sequences
         Pattern proper = Pattern.compile("\\b([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*)\\b");
         Matcher m = proper.matcher(query);
         while (m.find()) {
@@ -107,18 +106,84 @@ public class IntentExtractor {
             if (!matches.isEmpty()) return matches.getFirst().getTitle();
         }
 
-        // Strategy 3: individual content words as last resort
+        // Strategy 3: individual content words
         for (String token : tokens) {
             String word = token.replaceAll("[^a-zA-Z]", "").toLowerCase();
-            if (word.length() < 4) continue;
-            if (QUERY_FILLERS.contains(word)) continue;
+            if (word.length() < 4 || QUERY_FILLERS.contains(word)) continue;
             List<CentralCivilization> matches = civRepo.findByTitleContainingIgnoreCase(word);
             if (!matches.isEmpty()) return matches.getFirst().getTitle();
         }
 
-        return null;
+        // ── Strategy 4: fuzzy Levenshtein fallback ────────────────────────────
+        // Only runs when all exact strategies miss — e.g. "Indes Valey" or "Mesopotamiaa"
+        return fuzzyResolveCivName(tokens);
     }
 
+    /**
+     * Compares every n-gram candidate window against ALL stored civ titles
+     * using normalised Levenshtein similarity. Returns the best match above
+     * FUZZY_THRESHOLD, or null if nothing is close enough.
+     *
+     * Runs only when exact strategies fail — the civRepo.findAll() call is
+     * acceptable at that point (small reference table, already in L2 cache).
+     */
+    private String fuzzyResolveCivName(String[] tokens) {
+        List<CentralCivilization> allCivs = civRepo.findAll();
+        if (allCivs.isEmpty()) return null;
+
+        String bestTitle = null;
+        double bestScore = 0.0;
+
+        for (int len = tokens.length; len >= 1; len--) {
+            for (int start = 0; start <= tokens.length - len; start++) {
+                String candidate = String.join(" ", Arrays.copyOfRange(tokens, start, start + len))
+                        .replaceAll("[^a-zA-Z0-9 ]", "").trim().toLowerCase();
+
+                if (candidate.isBlank()) continue;
+                if (candidate.length() > MAX_CANDIDATE_LEN) continue;
+                if (len == 1 && QUERY_FILLERS.contains(candidate)) continue;
+
+                for (CentralCivilization civ : allCivs) {
+                    double score = similarity(candidate, civ.getTitle().toLowerCase());
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestTitle = civ.getTitle();
+                    }
+                }
+            }
+        }
+
+        return bestScore >= FUZZY_THRESHOLD ? bestTitle : null;
+    }
+
+    /**
+     * Normalised Levenshtein similarity in [0, 1].
+     * similarity("indes valey", "indus valley") ≈ 0.85
+     */
+    private double similarity(String a, String b) {
+        int dist = levenshtein(a, b);
+        int maxLen = Math.max(a.length(), b.length());
+        return maxLen == 0 ? 1.0 : 1.0 - (double) dist / maxLen;
+    }
+
+    /**
+     * Standard iterative Levenshtein distance — O(m×n) time, O(n) space.
+     * No external dependencies needed.
+     */
+    private int levenshtein(String a, String b) {
+        int m = a.length(), n = b.length();
+        int[] prev = new int[n + 1], curr = new int[n + 1];
+        for (int j = 0; j <= n; j++) prev[j] = j;
+        for (int i = 1; i <= m; i++) {
+            curr[0] = i;
+            for (int j = 1; j <= n; j++) {
+                int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+                curr[j] = Math.min(Math.min(curr[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+            }
+            int[] tmp = prev; prev = curr; curr = tmp;
+        }
+        return prev[n];
+    }
     // ── Year extraction ───────────────────────────────────────────────────────
 
     private void extractYears(String query, QueryIntent intent) {

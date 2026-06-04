@@ -135,19 +135,20 @@
 <!-- ── Toast container ──────────────────────────────────────────────── -->
 <div class="toast-container" id="toasts"></div>
 
-<!-- ── New Civilization Modal ────────────────────────────────────────── -->
+<!-- ── New Civilization Modal ───────────────────────────────────────────── -->
 <div class="modal-overlay" id="modal-new-civ">
-    <div class="modal">
+    <div class="modal modal-wide">
         <div class="modal-header">
             <span class="modal-title">Add Civilization to Central Archive</span>
             <button class="modal-close" data-close="modal-new-civ">✕</button>
         </div>
         <div class="modal-body">
             <div class="form-group">
-                <label>Search by name</label>
-                <input type="text" id="new-civ-search" placeholder="e.g. Indus Valley Civilization" autocomplete="off">
+                <label>Search by civilization name</label>
+                <input type="text" id="new-civ-search"
+                       placeholder="e.g. Indus Valley Civilization" autocomplete="off">
             </div>
-            <div id="civ-metadata-picker" style="display:none;margin-top:12px"></div>
+            <div id="civ-metadata-picker" style="display:none;margin-top:4px"></div>
         </div>
         <div class="modal-footer">
             <button class="btn-cancel" data-close="modal-new-civ">Cancel</button>
@@ -192,25 +193,18 @@
 </div>
 
 <<!-- ── Add Entry Modal (picks from approved marks) ──────────────────── -->
+<!-- ── Add Entry Modal ──────────────────────────────────────────────────── -->
 <div class="modal-overlay" id="modal-add-entry">
-    <div class="modal" style="max-width:560px">
+    <div class="modal modal-wide">
         <div class="modal-header">
-            <span class="modal-title">Add Approved Entry to Archive</span>
+            <span class="modal-title">Link Approved Entry to Archive</span>
             <button class="modal-close" data-close="modal-add-entry">✕</button>
         </div>
-        <div class="modal-body">
-            <p style="font-size:0.82rem;color:var(--faint);margin-bottom:12px">
-                Only entries you have marked <strong>Approved</strong> are shown.
-                Select one to add it to this volume.
-            </p>
-            <div id="approved-marks-list" style="max-height:240px;overflow-y:auto;border:1px solid var(--rule);border-radius:var(--radius);margin-bottom:14px">
-                <div style="padding:20px;text-align:center;color:var(--faint);font-size:0.82rem">Loading…</div>
-            </div>
-            <input type="hidden" id="entry-version-id">
-            <input type="hidden" id="entry-node-id">
-            <div class="form-group">
-                <label>Position in Volume <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--faint)">(display order)</span></label>
-                <input type="number" id="entry-position" placeholder="1" min="1">
+        <div class="modal-body" style="gap:10px">
+            <div id="approved-marks-list" class="entry-pick-list"></div>
+            <div class="form-group" style="margin-top:4px">
+                <label>Starting Position in Volume <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--faint)">(display order — entries will be re-sorted by year automatically)</span></label>
+                <input type="number" id="entry-position" placeholder="1" min="1" style="max-width:120px">
             </div>
         </div>
         <div class="modal-footer">

@@ -40,15 +40,29 @@ public class AISecurityConfig {
 
     @Bean
     public CorsConfigurationSource aiCorsConfigurationSource() {
+
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*"));
-        config.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+
+        config.setAllowedOrigins(List.of(
+                "https://aksharaoracle.netlify.app"
+        ));
+
+        config.setAllowedMethods(List.of(
+                "GET",
+                "POST",
+                "OPTIONS"
+        ));
+
         config.setAllowedHeaders(List.of("*"));
+
         config.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
         source.registerCorsConfiguration("/api/oracle/**", config);
         source.registerCorsConfiguration("/api/auth/**", config);
+
         return source;
     }
 }

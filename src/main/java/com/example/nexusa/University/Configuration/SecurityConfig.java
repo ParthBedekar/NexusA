@@ -29,19 +29,37 @@
 
             return http.build();
         }
-
         @Bean
-        public CorsConfigurationSource corsConfigurationSource(){
-            CorsConfiguration config=new CorsConfiguration();
+        public CorsConfigurationSource corsConfigurationSource() {
+            CorsConfiguration config = new CorsConfiguration();
 
+            config.setAllowedOrigins(List.of(
+                    "http://localhost:63342",
+                    "https://contribute-aksharanexus.netlify.app",
+                    "https://reviewer-aksharanexus.netlify.app"
+            ));
 
-            config.setAllowedOrigins(List.of("http://localhost:63342"));
-            config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH"));
-            config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+            config.setAllowedMethods(List.of(
+                    "GET",
+                    "POST",
+                    "PUT",
+                    "DELETE",
+                    "OPTIONS",
+                    "PATCH"
+            ));
+
+            config.setAllowedHeaders(List.of(
+                    "Authorization",
+                    "Content-Type"
+            ));
+
             config.setAllowCredentials(false);
 
-            UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+            UrlBasedCorsConfigurationSource source =
+                    new UrlBasedCorsConfigurationSource();
+
             source.registerCorsConfiguration("/**", config);
+
             return source;
         }
         @Bean

@@ -1,5 +1,6 @@
 package com.example.nexusa.University.Service;
 
+import com.example.nexusa.Repository.*;
 import com.example.nexusa.University.Dto.AddNodeRequestDTO;
 import com.example.nexusa.University.Dto.CreateCivilizationDTO;
 import com.example.nexusa.Model.CVersion;
@@ -8,10 +9,7 @@ import com.example.nexusa.Model.EditorAssignment;
 import com.example.nexusa.Model.Enums.ReviewStatus;
 import com.example.nexusa.Model.Enums.Role;
 import com.example.nexusa.Model.User;
-import com.example.nexusa.Repository.CVersionRepository;
-import com.example.nexusa.Repository.CivilizationRepository;
-import com.example.nexusa.Repository.EditorAssignmentRepository;
-import com.example.nexusa.Repository.UserRepository;
+import com.example.nexusa.University.Dto.EntryMarkForEditorDTO;
 import jakarta.transaction.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -27,17 +25,19 @@ public class CivilizationService {
     private final CVersionRepository cVersionRepository;
     private final CMETreeService cmeTreeService;
     private final EditorAssignmentRepository editorAssignmentRepository;
+    private final EntryReviewMarkRepository entryReviewMarkRepository;
 
     public CivilizationService(UserRepository userRepository,
                                CivilizationRepository civilizationRepository,
                                CVersionRepository cVersionRepository,
                                CMETreeService cmeTreeService,
-                               EditorAssignmentRepository editorAssignmentRepository) {
+                               EditorAssignmentRepository editorAssignmentRepository, EntryReviewMarkRepository entryReviewMarkRepository) {
         this.userRepository = userRepository;
         this.civilizationRepository = civilizationRepository;
         this.cVersionRepository = cVersionRepository;
         this.cmeTreeService = cmeTreeService;
         this.editorAssignmentRepository = editorAssignmentRepository;
+        this.entryReviewMarkRepository = entryReviewMarkRepository;
     }
 
     private User getAuthenticatedUser() {
@@ -92,7 +92,31 @@ public class CivilizationService {
     }
 
 
+    public List<EntryMarkForEditorDTO> getEntryMarksForCiv(UUID civId) {
+        User user = getAuthenticatedUser();
+        // Editors and admins of this civ can see marks
+        if (user.getRole() != Role.ADMIN) {
+            if (!editorAssignmentRepository.existsByCivilization_CivIdAndEditor_UserId(
+                    civId, user.getUserId()))
+                throw new RuntimeException("Not authorized");
+        }
 
+        return entryReviewMarkRepository.findByVersion_Civilization_CivId(civId)
+                .stream()
+                .map(m -> {
+                    EntryMarkForEditorDTO dto = new EntryMarkForEditorDTO();
+                    dto.setMarkId(m.getMarkId());
+                    dto.setNodeId(m.getNodeId());
+                    dto.setEntryTitle(m.getEntryTitle());
+                    dto.setMarkStatus(m.getMarkStatus());
+                    dto.setReviewerNote(m.getReviewerNote());
+                    dto.setMarkedAt(m.getMarkedAt());
+                    if (m.getReviewer() != null)
+                        dto.setReviewerName(m.getReviewer().getFirstName()
+                                + " " + m.getReviewer().getLastName());
+                    return dto;
+                }).toList();
+    }
 
     public List<User> getUniversityUsers() {
         User admin = getAuthenticatedUser();

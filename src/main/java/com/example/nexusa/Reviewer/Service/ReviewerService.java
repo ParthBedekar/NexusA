@@ -179,7 +179,31 @@ public class ReviewerService {
         dto.setMarkStatus(m.getMarkStatus());
         dto.setReviewerNote(m.getReviewerNote());
         dto.setMarkedAt(m.getMarkedAt());
+
+        // Populate enriched context from version → civilization → university
+        if (m.getVersion() != null && m.getVersion().getCivilization() != null) {
+            var civ = m.getVersion().getCivilization();
+            dto.setCivTitle(civ.getTitle());
+            dto.setCivStartYear(civ.getStartDate());
+            dto.setCivEndYear(civ.getEndDate());
+            if (civ.getUniversity() != null)
+                dto.setUniversityName(civ.getUniversity().getName());
+        }
+        if (m.getVersion().getCommittedBy() != null) {
+            var u = m.getVersion().getCommittedBy();
+            dto.setCommittedByName(u.getFirstName() + " " + u.getLastName());
+        }
+
         return dto;
+    }
+    @Transactional
+    public void deleteMark(UUID markId) {
+        Reviewer reviewer = getAuthenticatedReviewer();
+        if (!entryReviewMarkRepository.existsByMarkIdAndReviewer_ReviewerId(
+                markId, reviewer.getReviewerId()))
+            throw new RuntimeException("Mark not found or does not belong to you");
+        entryReviewMarkRepository.deleteByMarkIdAndReviewer_ReviewerId(
+                markId, reviewer.getReviewerId());
     }
     // In ReviewerService.java — replace getPendingVersions()
     public List<VersionDetailDTO> getAllLatestVersions() {

@@ -17,4 +17,10 @@ public interface CentralEntryDivergenceRepository extends JpaRepository<CentralE
     // Check if a divergence already exists between two entries
     boolean existsByPrimaryEntry_CentralEntryIdAndConflictingEntry_CentralEntryId(
             UUID primaryEntryId, UUID conflictingEntryId);
+    void deleteByPrimaryEntry_CentralEntryId(UUID entryId);
+    void deleteByConflictingEntry_CentralEntryId(UUID entryId);
+
+    // already exists, but confirm you have:
+    boolean existsByPrimaryEntry_CentralEntryId(UUID entryId);
+    boolean existsByConflictingEntry_CentralEntryId(UUID entryId);
 }

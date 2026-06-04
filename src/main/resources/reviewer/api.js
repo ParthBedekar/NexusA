@@ -87,4 +87,8 @@ export const getCentralCivilizationsForReviewer = ()          => req('GET',  '/r
 export const markEntryForCentral = (dto) => req('POST', '/reviewer/entry/mark-for-central', dto);
 // ── Wikidata ──────────────────────────────────────────────────────────────
 export const getCivMetadata = (title) => req('GET', `/reviewer/central/civ-metadata?title=${encodeURIComponent(title)}`);
+export const deleteEntry  = (cId, vId, eId) => req('DELETE', `/reviewer/central/${cId}/volume/${vId}/entry/${eId}`);
+export const deleteVolume = (cId, vId)       => req('DELETE', `/reviewer/central/${cId}/volume/${vId}`);
+export const addEntriesBatch = (cId, vId, dto) => req('POST', `/reviewer/central/${cId}/volume/${vId}/entries/batch`, dto);
+export const deleteMark = (markId) => req('DELETE', `/reviewer/entry/mark/${markId}`);
 export const getVersionMarks = (versionId) => req('GET', `/reviewer/version/${versionId}/marks`);

@@ -18,7 +18,7 @@ public interface CentralEntryRepository extends JpaRepository<CentralEntry, UUID
     boolean existsBySourceVersion_VersionIdAndSourceNodeId(UUID versionId, String nodeId);
     List<CentralEntry> findByVolume_Civilization_CentralCivId(UUID civId);
     List<CentralEntry> findByVolume_VolumeIdAndIsDivergentTrue(UUID volumeId);
-
+    List<CentralEntry> findByVolume_VolumeIdOrderByStartYearAscEndYearAsc(UUID volumeId);
     // Oracle: fuzzy civ name match with optional time range filter
     @Query("""
         SELECT e FROM CentralEntry e

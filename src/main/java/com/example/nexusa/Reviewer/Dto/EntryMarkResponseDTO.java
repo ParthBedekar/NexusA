@@ -15,4 +15,12 @@ public class EntryMarkResponseDTO {
     private EntryMarkStatus markStatus;
     private String reviewerNote;
     private LocalDateTime markedAt;
+    // Add to existing EntryMarkResponseDTO
+    private String civTitle;
+    private String universityName;
+    private String committedByName;
+    private Long civStartYear;
+    private Long civEndYear;
+    private Long entryStartYear;
+    private Long entryEndYear;
 }

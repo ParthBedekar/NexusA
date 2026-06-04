@@ -74,7 +74,18 @@
             <button class="btn btn-teal w-full btn-sm" onclick="openModal('assign-editor-modal')">+ Assign editor</button>
         </div>
     </div>
-
+    <!-- Entry Review Marks Panel -->
+    <div class="col-marks" id="col-marks" style="display:none">
+        <div class="panel-header">
+            <div class="panel-title">Review Feedback</div>
+            <div class="panel-sub">What reviewers said about your entries</div>
+        </div>
+        <div id="marks-feed" style="flex:1;overflow-y:auto;padding:8px 0">
+            <div class="empty-state" style="padding:32px 16px">
+                <p>No feedback yet</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Add Volume Modal -->
@@ -264,13 +275,10 @@
                     </div>
                     <div class="v-msg">${v.commitMessage || 'No message'}</div>
                     <div class="v-time">${new Date(v.commitTimestamp).toLocaleString()}</div>
-                    <div class="v-status">
-                        <span class="v-type ${
-                    v.reviewStatus === 'PUBLISHED'         ? 'v-type-major' :
-                        v.reviewStatus === 'PENDING_REVIEW'    ? 'v-type-minor' :
-                            v.reviewStatus === 'REJECTED'          ? 'v-type-rejected' : ''
-                        }">${v.reviewStatus || 'DRAFT'}</span>
-                    </div>
+
+                ${(v.reviewStatus === 'DRAFT' || v.reviewStatus === 'REVISION_REQUESTED')
+                                    ? `<div class="v-needs-review">needs submission</div>`
+                                    : ''}
                     ${role === 'ADMIN' && i > 0
                             ? `<button class="btn btn-secondary btn-sm rollback-btn"
                                    onclick="event.stopPropagation();rollback('${v.hash}')">
@@ -328,7 +336,7 @@
     `;
     }
     // ── Load Tree ──
-    function loadTree(version) {
+    async function loadTree(version) {
         currentVersionHash = version.hash;
         document.getElementById('tree-hash').textContent = '';
 
@@ -349,16 +357,29 @@
             return;
         }
 
+        // Load marks first so tree render can use them
+        let marksMap = {};
+        try {
+            const marks = await CivAPI.getEntryMarks(civId);
+            marks.forEach(m => { marksMap[m.nodeId] = m; });
+        } catch { /* marks not critical — render tree anyway */ }
+
         rootNodeId = tree.nodeId;
-        document.getElementById('tree-body').innerHTML = renderTreeNode(tree, true);
+        document.getElementById('tree-body').innerHTML = renderTreeNode(tree, true, null, marksMap);
 
         const canEdit = role === 'ADMIN' || role === 'EDITOR';
         document.getElementById('tree-edit-actions').innerHTML = canEdit
             ? `<button class="btn btn-secondary btn-sm" onclick="openAddVolume('${rootNodeId}')">+ Volume</button>`
             : '';
+
+        // Show marks panel if there are any marks
+        if (Object.keys(marksMap).length > 0) {
+            renderMarksFeed(Object.values(marksMap));
+            document.getElementById('col-marks').classList.add('col-marks-visible');
+        }
     }
 
-    function renderTreeNode(node, isRoot = false, parentData = null) {
+    function renderTreeNode(node, isRoot = false, parentData = null, marksMap = {}) {
         const data = node.data;
         const children = node.children || [];
         const hasChildren = children.length > 0;
@@ -366,7 +387,6 @@
         const isEntry  = data?.nodeType === 'ENTRY';
         const isVolume = data?.nodeType === 'VOLUME';
 
-        // Glyph: mono characters instead of emoji
         let glyph = '◆';
         if (isVolume) glyph = '&sect;';
         if (isEntry)  glyph = '&ndash;';
@@ -382,39 +402,83 @@
         }
 
         const nodeId = node.nodeId;
-        const civTitleText  = encodeURIComponent(
+
+        // Entry mark badge
+        let markBadgeHTML = '';
+        if (isEntry && marksMap[nodeId]) {
+            const m = marksMap[nodeId];
+            const badgeClass = {
+                APPROVED:           'mark-badge-approved',
+                REJECTED:           'mark-badge-rejected',
+                REVISION_REQUESTED: 'mark-badge-revision',
+            }[m.markStatus] || '';
+            const label = m.markStatus.replace(/_/g, ' ');
+            markBadgeHTML = `<span class="mark-badge ${badgeClass}">${label}</span>`;
+        }
+
+        const civTitleText = encodeURIComponent(
             document.getElementById('civ-meta')?.querySelector('.civ-meta-title')?.textContent || 'Civilization');
-        const volTitleText  = encodeURIComponent(parentData?.title || 'Volume');
+        const volTitleText = encodeURIComponent(parentData?.title || 'Volume');
         const editorUrl = `entry-editor.html?civId=${civId}&nodeId=${nodeId}&civTitle=${civTitleText}&volTitle=${volTitleText}`;
 
         const actionsHTML = canEdit && !isRoot ? `
-            <div class="tree-node-actions">
-                ${isVolume ? `<button class="tree-action-btn" onclick="event.stopPropagation();openAddEntry('${nodeId}')">+ Entry</button>` : ''}
-                ${isEntry  ? `<a class="tree-action-btn" href="${editorUrl}" onclick="event.stopPropagation()">Edit</a>` : ''}
-            </div>` : '';
+        <div class="tree-node-actions">
+            ${isVolume ? `<button class="tree-action-btn" onclick="event.stopPropagation();openAddEntry('${nodeId}')">+ Entry</button>` : ''}
+            ${isEntry  ? `<a class="tree-action-btn" href="${editorUrl}" onclick="event.stopPropagation()">Edit</a>` : ''}
+        </div>` : '';
 
         const rowClick = isEntry
             ? `onclick="window.location.href='${editorUrl}'" style="cursor:pointer"`
             : `onclick="toggleNode(this)"`;
 
         return `
-            <div class="tree-node-wrap">
-                <div class="tree-node-row" ${rowClick}>
-                    ${hasChildren
+        <div class="tree-node-wrap">
+            <div class="tree-node-row" ${rowClick}>
+                ${hasChildren
             ? `<span class="tree-toggle open" onclick="event.stopPropagation();toggleNode(this.parentElement)">&#9658;</span>`
             : `<span class="tree-toggle-spacer"></span>`}
-                    <span class="tree-node-glyph">${glyph}</span>
-                    <span class="tree-node-label ${isEntry ? 'entry-label' : ''}">${label}</span>
-                    ${metaText ? `<span class="tree-node-meta">${metaText}</span>` : ''}
-                    ${actionsHTML}
-                </div>
-                ${hasChildren ? `
-                    <div class="tree-children-wrap">
-                        ${children.map(c => renderTreeNode(c, false, data)).join('')}
-                    </div>` : ''}
-            </div>`;
+                <span class="tree-node-glyph">${glyph}</span>
+                <span class="tree-node-label ${isEntry ? 'entry-label' : ''}">${label}</span>
+                ${metaText ? `<span class="tree-node-meta">${metaText}</span>` : ''}
+                ${markBadgeHTML}
+                ${actionsHTML}
+            </div>
+            ${hasChildren ? `
+                <div class="tree-children-wrap">
+                    ${children.map(c => renderTreeNode(c, false, data, marksMap)).join('')}
+                </div>` : ''}
+        </div>`;
     }
+    function renderMarksFeed(marks) {
+        const feed = document.getElementById('marks-feed');
+        if (!marks.length) return;
 
+        // Sort newest first
+        marks.sort((a, b) => new Date(b.markedAt) - new Date(a.markedAt));
+
+        const icons = { APPROVED: '✓', REJECTED: '✕', REVISION_REQUESTED: '↺' };
+        const classes = {
+            APPROVED:           'feed-item-approved',
+            REJECTED:           'feed-item-rejected',
+            REVISION_REQUESTED: 'feed-item-revision',
+        };
+
+        feed.innerHTML = marks.map(m => `
+        <div class="feed-item ${classes[m.markStatus] || ''}">
+            <div class="feed-item-top">
+                <span class="feed-icon">${icons[m.markStatus] || '·'}</span>
+                <span class="feed-entry-title">${m.entryTitle || 'Untitled Entry'}</span>
+            </div>
+            <div class="feed-status">${m.markStatus.replace(/_/g, ' ')}</div>
+            ${m.reviewerNote
+            ? `<div class="feed-note">"${m.reviewerNote}"</div>`
+            : ''}
+            <div class="feed-meta">
+                ${m.reviewerName ? `by ${m.reviewerName} &middot; ` : ''}
+                ${m.markedAt ? new Date(m.markedAt).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : ''}
+            </div>
+        </div>`).join('');
+    }
     function toggleNode(row) {
         const toggle = row.querySelector('.tree-toggle');
         if (!toggle) return;

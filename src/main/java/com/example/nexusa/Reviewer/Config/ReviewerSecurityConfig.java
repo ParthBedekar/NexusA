@@ -35,7 +35,10 @@ public class ReviewerSecurityConfig {
                         s.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/reviewer/auth/login", "/reviewer/auth/register").permitAll()
+                        .requestMatchers(
+                                "/reviewer/auth/login",
+                                "/reviewer/auth/register"
+                        ).permitAll()
                         .anyRequest().hasRole("REVIEWER")
                 )
                 .addFilterBefore(

@@ -3,6 +3,7 @@ package com.example.nexusa.University.Controller;
 import com.example.nexusa.University.Dto.AddNodeRequestDTO;
 import com.example.nexusa.University.Dto.CreateCivilizationDTO;
 
+import com.example.nexusa.University.Dto.EntryMarkForEditorDTO;
 import com.example.nexusa.University.Dto.RollbackRequestDTO;
 import com.example.nexusa.Model.CVersion;
 import com.example.nexusa.Model.Civilization;
@@ -48,6 +49,15 @@ public class CivilizationController {
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/civilization/{civId}/entry-marks")
+    public ResponseEntity<List<EntryMarkForEditorDTO>> getEntryMarks(@PathVariable UUID civId) {
+        try {
+            return ResponseEntity.ok(civilizationService.getEntryMarksForCiv(civId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
         }
     }
     @GetMapping("/civilization/{civId}/latest")

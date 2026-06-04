@@ -67,7 +67,106 @@ public class CentralService {
     }
 
     // ── Create central civilization ───────────────────────────────────────────
+// ── Delete a single entry ─────────────────────────────────────────────────
 
+    @Transactional
+    public void deleteEntry(UUID centralCivId, UUID volumeId, UUID entryId) {
+        Reviewer reviewer = getAuthenticatedReviewer();
+
+        CentralEntry entry = centralEntryRepo.findById(entryId)
+                .orElseThrow(() -> new RuntimeException("Entry not found"));
+
+        // Ownership checks
+        if (!entry.getVolume().getVolumeId().equals(volumeId))
+            throw new RuntimeException("Entry does not belong to the specified volume");
+
+        if (!entry.getVolume().getCivilization().getCentralCivId().equals(centralCivId))
+            throw new RuntimeException("Volume does not belong to the specified civilization");
+
+        // Clean up divergence records that reference this entry (both sides)
+        divergenceRepo.deleteByPrimaryEntry_CentralEntryId(entryId);
+        divergenceRepo.deleteByConflictingEntry_CentralEntryId(entryId);
+
+        // If the other side of a divergence pair is now clean, clear its isDivergent flag
+        // (only if it has no remaining divergence records on either side)
+        List<CentralEntry> potentiallyCleared = centralEntryRepo
+                .findByVolume_VolumeIdOrderByPosition(volumeId)
+                .stream()
+                .filter(e -> Boolean.TRUE.equals(e.getIsDivergent()))
+                .toList();
+
+        for (CentralEntry candidate : potentiallyCleared) {
+            boolean stillDivergent =
+                    divergenceRepo.existsByPrimaryEntry_CentralEntryId(candidate.getCentralEntryId()) ||
+                            divergenceRepo.existsByConflictingEntry_CentralEntryId(candidate.getCentralEntryId());
+            if (!stillDivergent) {
+                candidate.setIsDivergent(false);
+                centralEntryRepo.save(candidate);
+            }
+        }
+
+        centralEntryRepo.delete(entry);
+
+        // Bump the parent civ's lastUpdatedAt
+        CentralCivilization civ = centralCivRepo.findById(centralCivId)
+                .orElseThrow(() -> new RuntimeException("Central civilization not found"));
+        civ.setLastUpdatedAt(LocalDateTime.now());
+        centralCivRepo.save(civ);
+        reindexVolumePositions(volumeId);
+    }
+
+// ── Delete a volume (and all its entries) ────────────────────────────────
+
+    @Transactional
+    public void deleteVolume(UUID centralCivId, UUID volumeId) {
+        Reviewer reviewer = getAuthenticatedReviewer();
+
+        CentralVolume volume = centralVolumeRepo.findById(volumeId)
+                .orElseThrow(() -> new RuntimeException("Volume not found"));
+
+        if (!volume.getCivilization().getCentralCivId().equals(centralCivId))
+            throw new RuntimeException("Volume does not belong to the specified civilization");
+
+        // Delete each entry's divergence records first, then the entry itself
+        List<CentralEntry> entries = centralEntryRepo
+                .findByVolume_VolumeIdOrderByPosition(volumeId);
+
+        for (CentralEntry entry : entries) {
+            divergenceRepo.deleteByPrimaryEntry_CentralEntryId(entry.getCentralEntryId());
+            divergenceRepo.deleteByConflictingEntry_CentralEntryId(entry.getCentralEntryId());
+        }
+        centralEntryRepo.deleteAll(entries);
+        centralVolumeRepo.delete(volume);
+
+        CentralCivilization civ = centralCivRepo.findById(centralCivId)
+                .orElseThrow(() -> new RuntimeException("Central civilization not found"));
+        civ.setLastUpdatedAt(LocalDateTime.now());
+        centralCivRepo.save(civ);
+    }
+
+// ── Batch add entries ─────────────────────────────────────────────────────
+
+    @Transactional
+    public BatchAddResultDTO addEntriesBatch(UUID centralCivId, UUID volumeId,
+                                             BatchAddCentralEntriesDTO batchDto) {
+        BatchAddResultDTO result = new BatchAddResultDTO();
+        result.setAddedEntryIds(new ArrayList<>());
+        result.setFailures(new ArrayList<>());
+
+        for (AddCentralEntryDTO entryDto : batchDto.getEntries()) {
+            try {
+                UUID id = addEntry(centralCivId, volumeId, entryDto);
+                result.getAddedEntryIds().add(id);
+            } catch (RuntimeException e) {
+                BatchAddResultDTO.FailedEntry failure = new BatchAddResultDTO.FailedEntry();
+                failure.setNodeId(entryDto.getSourceNodeId());
+                failure.setReason(e.getMessage());
+                result.getFailures().add(failure);
+            }
+        }
+
+        return result;
+    }
     @Transactional
     public UUID createCentralCivilization(CreateCentralCivilizationDTO dto) {
         Reviewer reviewer = getAuthenticatedReviewer();
@@ -338,8 +437,7 @@ public class CentralService {
             vDto.setPosition(vol.getPosition());
 
             List<CentralEntry> entries = centralEntryRepo
-                    .findByVolume_VolumeIdOrderByPosition(vol.getVolumeId());
-
+                    .findByVolume_VolumeIdOrderByStartYearAscEndYearAsc(vol.getVolumeId());
             List<CentralCivilizationDetailDTO.CentralEntryDTO> entryDTOs = new ArrayList<>();
             for (CentralEntry entry : entries) {
                 CentralCivilizationDetailDTO.CentralEntryDTO eDto = new CentralCivilizationDetailDTO.CentralEntryDTO();
@@ -384,5 +482,14 @@ public class CentralService {
         }
         dto.setVolumes(volumeDTOs);
         return dto;
+    }
+
+    private void reindexVolumePositions(UUID volumeId) {
+        List<CentralEntry> remaining = centralEntryRepo
+                .findByVolume_VolumeIdOrderByStartYearAscEndYearAsc(volumeId);
+        for (int i = 0; i < remaining.size(); i++) {
+            remaining.get(i).setPosition(i + 1);
+        }
+        centralEntryRepo.saveAll(remaining);
     }
 }

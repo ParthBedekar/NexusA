@@ -5,359 +5,190 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Entry Review — AksharaNexus</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Serif:ital,wght@0,300;0,400;0,500;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css"/>
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-            --ink:        #0f0e0d;
-            --paper:      #faf8f4;
-            --warm:       #f2eee4;
-            --accent:     #c8562a;
-            --accent-2:   #2a5bc8;
-            --muted:      #6e6557;
-            --border:     #dbd5c5;
-            --faint:      #a39a89;
-            --teal:       #1e6b5c;
-
-            --pub-ink:    #166534;
-            --pub-bg:     #f0fdf4;
-            --pub-border: #bbf7d0;
-
-            --rej-ink:    #991b1b;
-            --rej-bg:     #fef2f2;
-            --rej-border: #fecaca;
-
-            --mono:       'DM Mono', monospace;
-            --serif-doc:  'IBM Plex Serif', serif;
-            --sans:       'DM Sans', sans-serif;
-            --radius:     5px;
-            --topbar-h:   56px;
-        }
-
-        html, body { height: 100%; font-family: var(--sans); background: var(--paper); color: var(--ink); font-size: 14px; -webkit-font-smoothing: antialiased; }
-
-        /* ── Loading overlay ── */
-        .loading-overlay {
-            position: fixed; inset: 0; z-index: 999;
-            background: var(--paper);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 16px; transition: opacity .3s;
-        }
-        .loading-overlay.hidden { opacity: 0; pointer-events: none; }
-        .loading-logo { font-family: 'Instrument Serif', serif; font-size: 1.6rem; letter-spacing: -.02em; }
-        .loading-logo em { color: var(--accent); font-style: italic; }
-        .loading-sub { font-size: .8rem; color: var(--muted); font-family: var(--mono); }
-        .spinner {
-            width: 24px; height: 24px;
-            border: 2px solid var(--border);
-            border-top-color: var(--ink);
-            border-radius: 50%;
-            animation: spin .6s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* ── Topbar ── */
+        /* ── Layout shells not in style.css ── */
         .editor-topbar {
             position: fixed; top: 0; left: 0; right: 0;
-            height: var(--topbar-h);
-            background: #fff;
-            border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; gap: 16px;
-            padding: 0 24px;
-            z-index: 100;
+            height: var(--nav-h);
+            background: var(--nav-dark);
+            border-bottom: 1px solid var(--nav-border);
+            display: flex; align-items: center; gap: 14px;
+            padding: 0 24px; z-index: 100;
         }
         .topbar-icon {
-            width: 28px; height: 28px; background: var(--ink); border-radius: 4px;
+            width: 26px; height: 26px; background: var(--teal); border-radius: 4px;
             display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
-        .topbar-icon svg { width: 14px; height: 14px; fill: #fff; }
+        .topbar-icon svg { width: 13px; height: 13px; fill: #fff; }
         .topbar-meta { flex: 1; min-width: 0; }
         .topbar-docname {
-            font-size: .9rem; font-weight: 500; color: var(--ink);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            display: block;
+            font-size: 0.875rem; font-weight: 500; color: #F8FAFC;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
         }
         .topbar-breadcrumb-row {
-            font-family: var(--mono); font-size: .65rem; color: var(--faint);
+            font-family: var(--mono); font-size: 0.62rem; color: #64748B;
             display: flex; align-items: center; gap: 4px; margin-top: 2px;
             text-transform: uppercase; letter-spacing: 0.04em;
         }
-        .bc-sep { color: var(--border); }
-        .topbar-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-        .ro-chip {
-            font-family: var(--mono); font-size: .65rem; letter-spacing: .08em;
-            text-transform: uppercase; padding: 4px 10px;
-            background: var(--paper); border: 1px solid var(--border);
-            border-radius: 4px; color: var(--muted); font-weight: 500;
-        }
-        .btn-topbar-back {
-            padding: 7px 14px; border: 1px solid var(--border); border-radius: var(--radius);
-            background: transparent; color: var(--muted); font-family: var(--sans);
-            font-size: .8rem; cursor: pointer; text-decoration: none; font-weight: 500;
-            transition: all .15s ease;
-        }
-        .btn-topbar-back:hover { border-color: var(--ink); color: var(--ink); background: var(--paper); }
+        .bc-sep { color: #1E293B; }
+        .topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
-        /* ── Shell ── */
-        .editor-shell {
-            display: flex;
-            height: 100vh;
-            padding-top: var(--topbar-h);
-        }
+        .editor-shell { display: flex; height: 100vh; padding-top: var(--nav-h); }
 
         /* ── Left sidebar ── */
         .left-sidebar {
-            width: 240px; flex-shrink: 0;
-            background: #fff;
-            border-right: 1px solid var(--border);
-            display: flex; flex-direction: column;
-            overflow-y: auto;
+            width: 220px; flex-shrink: 0;
+            background: var(--card); border-right: 1px solid var(--rule);
+            display: flex; flex-direction: column; overflow-y: auto;
         }
-        .sidebar-section {
-            padding: 20px 20px 16px;
-            border-bottom: 1px solid var(--border);
-        }
-        .sidebar-section-label {
-            font-family: var(--mono); font-size: .65rem; letter-spacing: .12em;
-            text-transform: uppercase; color: var(--faint);
-            display: block; margin-bottom: 14px; font-weight: 500;
-        }
-        .sidebar-meta-field { margin-bottom: 12px; }
+        .sidebar-section-inner { padding: 18px 18px 14px; border-bottom: 1px solid var(--rule); }
+        .sidebar-meta-field { margin-bottom: 10px; }
         .sidebar-meta-field label {
-            font-size: .72rem; color: var(--muted); display: block; margin-bottom: 4px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.02em;
+            font-family: var(--mono); font-size: 0.62rem; color: var(--faint);
+            display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em;
         }
         .meta-val-box {
-            font-family: var(--mono); font-size: .8rem; color: var(--ink); padding: 6px 10px; background: var(--paper); border: 1px solid var(--border); border-radius: 4px;
+            font-family: var(--mono); font-size: 0.78rem; color: var(--ink);
+            padding: 6px 10px; background: var(--bg); border: 1px solid var(--rule); border-radius: 4px;
         }
         .period-display {
-            margin-top: 14px; padding: 10px 12px;
-            background: var(--warm); border-radius: var(--radius);
-            display: flex; flex-direction: column; gap: 4px;
+            margin-top: 12px; padding: 9px 12px;
+            background: var(--teal-bg); border-radius: var(--radius);
+            border: 1px solid rgba(15,118,110,0.15);
+            display: flex; flex-direction: column; gap: 3px;
         }
-        .pd-label { font-size: .65rem; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.05em; }
-        .pd-value { font-family: var(--mono); font-size: .78rem; color: var(--ink); font-weight: 500; }
+        .pd-label { font-size: 0.62rem; color: var(--teal); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.05em; }
+        .pd-value { font-family: var(--mono); font-size: 0.75rem; color: var(--ink); font-weight: 500; }
 
         .stat-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 6px 0; border-bottom: 1px solid #fcfbfa;
+            padding: 7px 0; border-bottom: 1px solid var(--rule);
         }
         .stat-row:last-child { border-bottom: none; }
-        .stat-label { font-size: .8rem; color: var(--muted); }
-        .stat-val { font-family: var(--mono); font-size: .78rem; color: var(--ink); font-weight: 500; }
+        .stat-label-sm { font-size: 0.8rem; color: var(--muted); }
+        .stat-val-sm { font-family: var(--mono); font-size: 0.75rem; color: var(--ink); font-weight: 500; }
 
         /* ── Canvas ── */
-        .canvas-area {
-            flex: 1; overflow-y: auto;
-            background: var(--paper);
-            display: flex; flex-direction: column;
-        }
+        .canvas-area { flex: 1; overflow-y: auto; background: var(--bg); display: flex; flex-direction: column; }
 
-        /* Premium Action Control Bar */
         .review-action-bar {
-            background: #fff;
-            border-bottom: 1px solid var(--border);
-            padding: 12px 40px;
-            display: flex; justify-content: space-between; align-items: center;
+            background: var(--card); border-bottom: 1px solid var(--rule);
+            padding: 12px 36px; display: flex; justify-content: space-between; align-items: center;
             position: sticky; top: 0; z-index: 10;
         }
-        .action-bar-left h4 { font-size: .85rem; font-weight: 600; color: var(--ink); }
-        .action-bar-left p { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+        .action-bar-left h4 { font-size: 0.875rem; font-weight: 600; color: var(--ink); }
+        .action-bar-left p  { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
         .action-buttons-group { display: flex; gap: 10px; }
 
-        .btn-action {
-            font-family: var(--sans); font-size: .82rem; font-weight: 500; padding: 8px 16px;
-            border-radius: var(--radius); cursor: pointer; transition: all 0.15s ease; border: 1px solid transparent;
-        }
-        .btn-action--revision {
-            background: transparent; border-color: var(--border); color: var(--muted);
-        }
-        .btn-action--revision:hover {
-            border-color: var(--ink); color: var(--ink); background: var(--paper);
-        }
-        .btn-action--publish {
-            background: var(--ink); color: #fff;
-        }
-        .btn-action--publish:hover {
-            background: #2b2a28;
-        }
-
-        .doc-paper {
-            max-width: 780px; width: 100%; margin: 0 auto;
-            padding: 48px 40px 120px;
-        }
+        .doc-paper { max-width: 740px; width: 100%; margin: 0 auto; padding: 44px 36px 100px; }
 
         .entry-title-display {
-            font-family: var(--serif-doc); font-size: 2.4rem; font-weight: 400;
-            line-height: 1.15; color: var(--ink); margin-bottom: 32px;
-            letter-spacing: -.02em; border-bottom: 1px dashed var(--border); padding-bottom: 20px;
+            font-family: var(--serif); font-size: 2.2rem; font-weight: 400;
+            line-height: 1.15; color: var(--ink); margin-bottom: 28px;
+            letter-spacing: -0.02em; border-bottom: 1px solid var(--rule); padding-bottom: 18px;
         }
-
         .entry-body {
-            font-family: var(--serif-doc); font-size: 1.05rem;
-            line-height: 1.8; color: #1c1b1a; min-height: 200px;
+            font-family: var(--serif); font-size: 1rem;
+            line-height: 1.8; color: var(--ink); min-height: 200px;
         }
-        .entry-body p { margin-bottom: 1.25em; text-align: justify; }
+        .entry-body p { margin-bottom: 1.2em; text-align: justify; }
 
-        /* ── Structured blocks (Premium Technical Style) ── */
+        /* ── Structured blocks ── */
         .an-block {
-            margin: 28px 0;
-            border: 1px solid var(--border);
-            border-radius: var(--radius); overflow: hidden;
-            background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            margin: 24px 0; border: 1px solid var(--rule); border-radius: var(--radius);
+            overflow: hidden; background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,0.03);
         }
         .an-block-header {
-            padding: 10px 16px;
-            background: var(--warm);
-            border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; gap: 12px;
+            padding: 9px 16px; background: var(--bg); border-bottom: 1px solid var(--rule);
+            display: flex; align-items: center; gap: 10px;
         }
         .an-block-badge {
-            font-family: var(--mono); font-size: .62rem; letter-spacing: .08em;
-            text-transform: uppercase; padding: 3px 8px; border-radius: 3px; font-weight: 500;
+            font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
+            text-transform: uppercase; padding: 2px 8px; border-radius: 3px; font-weight: 500;
         }
-        .an-block[data-type="EVENT"]  .an-block-badge { background: #fef3c7; color: #92400e; }
-        .an-block[data-type="ERA"]    .an-block-badge { background: #ccfbf1; color: #115e59; }
-        .an-block[data-type="ASPECT"] .an-block-badge { background: #e0e7ff; color: #3730a3; }
-        .an-block[data-type="IMAGE"]  .an-block-badge { background: #ffeeeb; color: #9f2a1c; }
+        .an-block[data-type="EVENT"]  .an-block-badge { background: var(--rev-bg);  color: var(--rev-ink); }
+        .an-block[data-type="ERA"]    .an-block-badge { background: var(--teal-bg); color: var(--teal); }
+        .an-block[data-type="ASPECT"] .an-block-badge { background: var(--pend-bg); color: var(--pend-ink); }
+        .an-block[data-type="IMAGE"]  .an-block-badge { background: var(--rej-bg);  color: var(--rej-ink); }
 
-        .an-block-title {
-            font-size: .88rem; font-weight: 600; color: var(--ink); letter-spacing: -0.01em;
-        }
-        .an-block-body { padding: 18px 20px; }
-        .an-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px; }
+        .an-block-title { font-size: 0.875rem; font-weight: 500; color: var(--ink); }
+        .an-block-body  { padding: 16px 18px; }
+        .an-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 10px; }
 
         .an-field-label {
-            font-size: .68rem; color: var(--faint); display: block; margin-bottom: 4px;
-            text-transform: uppercase; letter-spacing: .06em; font-family: var(--mono); font-weight: 500;
+            font-size: 0.62rem; color: var(--faint); display: block; margin-bottom: 3px;
+            text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--mono);
         }
-        .an-field-val { font-size: .88rem; color: var(--ink); font-weight: 400; }
-        .an-description { font-size: .9rem; color: var(--muted); line-height: 1.6; margin-top: 10px; font-family: var(--sans); }
+        .an-field-val { font-size: 0.875rem; color: var(--ink); }
+        .an-description { font-size: 0.875rem; color: var(--muted); line-height: 1.6; margin-top: 8px; }
 
         .an-era-bar {
-            margin-top: 16px; height: 3px;
+            margin-top: 14px; height: 2px;
             background: linear-gradient(90deg, var(--teal), transparent);
             border-radius: 2px;
         }
-        .an-tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+        .an-tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
         .an-tag {
-            font-family: var(--mono); font-size: .68rem; letter-spacing: .02em;
-            padding: 3px 8px; background: var(--paper); border: 1px solid var(--border);
+            font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.02em;
+            padding: 3px 8px; background: var(--bg); border: 1px solid var(--rule);
             border-radius: 4px; color: var(--muted);
         }
-        .an-image-container { background: var(--paper); padding: 10px; border-radius: 4px; border: 1px solid var(--border); }
+        .an-image-container {
+            background: var(--bg); padding: 10px; border-radius: 4px;
+            border: 1px solid var(--rule);
+        }
         .an-image-preview { max-width: 100%; border-radius: 2px; display: block; margin: 0 auto; }
-        .an-image-caption { font-size: .8rem; color: var(--muted); margin-top: 8px; font-style: italic; text-align: center; font-family: var(--sans); }
+        .an-image-caption { font-size: 0.78rem; color: var(--faint); margin-top: 8px; font-style: italic; text-align: center; }
 
         /* ── Citations ── */
-        .an-citations-section {
-            margin-top: 18px; padding-top: 14px;
-            border-top: 1px dashed var(--border);
-        }
-        .an-citations-header { margin-bottom: 10px; }
+        .an-citations-section { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--rule); }
         .an-citations-label {
-            font-family: var(--mono); font-size: .62rem; letter-spacing: .1em;
-            text-transform: uppercase; color: var(--faint); font-weight: 500;
+            font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--faint); display: block; margin-bottom: 8px;
         }
         .an-citation-item {
             display: flex; align-items: flex-start; gap: 10px;
-            padding: 8px 0; border-bottom: 1px solid #fbfaf7;
-            font-size: .82rem; font-family: var(--sans);
+            padding: 7px 0; border-bottom: 1px solid var(--rule);
+            font-size: 0.8rem;
         }
         .an-citation-item:last-child { border-bottom: none; }
-        .an-citation-num {
-            font-family: var(--mono); font-size: .68rem; color: var(--faint);
-            min-width: 18px; padding-top: 2px;
-        }
-        .an-citation-summary { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; align-items: center; }
+        .an-citation-num { font-family: var(--mono); font-size: 0.65rem; color: var(--faint); min-width: 18px; padding-top: 2px; }
+        .an-citation-summary { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; align-items: center; }
         .cit-author { font-weight: 500; color: var(--ink); }
         .cit-source { color: var(--muted); font-style: italic; }
-        .cit-year { color: var(--muted); font-family: var(--mono); font-size: .72rem; }
+        .cit-year   { color: var(--muted); font-family: var(--mono); font-size: 0.7rem; }
         .cit-quality {
-            font-family: var(--mono); font-size: .58rem; letter-spacing: .04em;
+            font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.04em;
             text-transform: uppercase; padding: 2px 6px; border-radius: 3px; font-weight: 500;
         }
-        .cit-quality--primary   { background: #dcfce7; color: #15803d; }
-        .cit-quality--secondary { background: #dbeafe; color: #1d4ed8; }
-        .cit-quality--tertiary  { background: var(--warm); color: var(--muted); }
-        .an-cit-url { font-family: var(--mono); font-size: .72rem; color: var(--accent-2); width: 100%; margin-top: 2px; }
+        .cit-quality--primary   { background: var(--pub-bg); color: var(--pub-ink); }
+        .cit-quality--secondary { background: var(--pend-bg); color: var(--pend-ink); }
+        .cit-quality--tertiary  { background: var(--draft-bg); color: var(--draft-ink); }
+        .an-cit-url { font-family: var(--mono); font-size: 0.68rem; color: var(--teal); width: 100%; margin-top: 2px; }
         .an-cit-url a { text-decoration: none; color: inherit; }
         .an-cit-url a:hover { text-decoration: underline; }
-        .an-citations-empty { font-size: .78rem; color: var(--faint); font-style: italic; font-family: var(--sans); }
+        .an-citations-empty { font-size: 0.78rem; color: var(--faint); font-style: italic; }
 
-        /* ── Premium Modal System ── */
-        .modal-overlay {
-            position: fixed; inset: 0; background: rgba(15, 14, 13, 0.4);
-            backdrop-filter: blur(2px); z-index: 500;
-            display: flex; align-items: center; justify-content: center;
-            opacity: 1; transition: opacity 0.2s ease;
+        /* ── Loading overlay ── */
+        .loading-overlay {
+            position: fixed; inset: 0; z-index: 999; background: var(--bg);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 14px; transition: opacity 0.3s;
         }
-        .modal-overlay.hidden { opacity: 0; pointer-events: none; }
-        .modal-card {
-            background: #fff; border: 1px solid var(--border); width: 100%; max-width: 460px;
-            border-radius: 6px; box-shadow: 0 12px 32px rgba(15,14,13,0.15);
-            padding: 24px; transform: translateY(0); transition: transform 0.2s ease;
-        }
-        .modal-overlay.hidden .modal-card { transform: translateY(8px); }
-        .modal-title { font-size: 1.15rem; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; margin-bottom: 8px; }
-        .modal-desc { font-size: .85rem; color: var(--muted); line-height: 1.5; margin-bottom: 20px; }
+        .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+        .loading-logo { font-family: var(--serif); font-size: 1.5rem; color: var(--ink); }
+        .loading-logo em { color: var(--teal); font-style: italic; }
+        .loading-sub { font-size: 0.72rem; color: var(--faint); font-family: var(--mono); letter-spacing: 0.08em; }
+        .spinner { width: 22px; height: 22px; border: 2px solid var(--rule); border-top-color: var(--ink); border-radius: 50%; animation: spin .6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .modal-select-wrapper { margin-bottom: 24px; }
-        .modal-select-wrapper label { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); display: block; margin-bottom: 6px; }
-        .modal-select {
-            width: 100%; font-family: var(--sans); font-size: .9rem; padding: 10px 12px;
-            background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius);
-            color: var(--ink); outline: none; transition: border-color 0.15s ease;
-        }
-        .modal-select:focus { border-color: var(--ink); }
-
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
-        .btn-modal { font-family: var(--sans); font-size: .85rem; font-weight: 500; padding: 8px 16px; border-radius: var(--radius); cursor: pointer; border: 1px solid transparent; }
-        .btn-modal--cancel { background: transparent; border-color: var(--border); color: var(--muted); }
-        .btn-modal--cancel:hover { background: var(--paper); color: var(--ink); }
-        .btn-modal--confirm { background: var(--teal); color: #fff; }
-        .btn-modal--confirm:hover { background: #164e43; }
-
-        /* ── Toast ── */
-        .toast-container {
-            position: fixed; bottom: 24px; right: 24px;
-            display: flex; flex-direction: column; gap: 8px; z-index: 999;
-        }
-        .toast {
-            padding: 12px 18px; border-radius: var(--radius);
-            font-size: .85rem; font-family: var(--sans); font-weight: 500;
-            box-shadow: 0 4px 20px rgba(0,0,0,.08); line-height: 1.4;
-            animation: toastSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes toastSlide { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .toast-error { background: var(--rej-bg); border: 1px solid var(--rej-border); color: var(--rej-ink); }
-        .toast-success { background: var(--pub-bg); border: 1px solid var(--pub-border); color: var(--pub-ink); }
-        .toast-info  { background: #fff; border: 1px solid var(--border); color: var(--ink); }
-        .status-badge {
-            display: inline-block;
-            font-family: var(--mono);
-            font-size: .75rem;
-            letter-spacing: .05em;
-            padding: 3px 8px;
-            border-radius: 3px;
-            white-space: nowrap;
-            font-weight: 500;
-            text-transform: uppercase;
-        }
-        .status-APPROVED {
-            background: var(--pub-bg);
-            color: var(--pub-ink);
-            border: 1px solid var(--pub-border);
-        }
-        .status-REJECTED {
-            background: var(--rej-bg);
-            color: var(--rej-ink);
-            border: 1px solid var(--rej-border);
-        }
-        .status-REVISION_REQUESTED {
-            background: #fff8e6;
-            color: #a06000;
-            border: 1px solid #f5deb3;
+        /* Status badge on workflow bar */
+        .entry-status-badge {
+            display: inline-block; font-family: var(--mono); font-size: 0.72rem;
+            letter-spacing: 0.05em; padding: 3px 9px; border-radius: 3px;
+            white-space: nowrap; font-weight: 500;
         }
     </style>
 </head>
@@ -372,10 +203,10 @@
 <div class="editor-topbar">
     <div class="topbar-icon">
         <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-            <rect x="2" y="2" width="12" height="1.5" rx="0.5"/>
+            <rect x="2" y="2"    width="12" height="1.5" rx="0.5"/>
             <rect x="2" y="5.25" width="12" height="1.5" rx="0.5"/>
-            <rect x="2" y="8.5" width="8" height="1.5" rx="0.5"/>
-            <rect x="2" y="11.75" width="10" height="1.5" rx="0.5"/>
+            <rect x="2" y="8.5"  width="8"  height="1.5" rx="0.5"/>
+            <rect x="2" y="11.75"width="10" height="1.5" rx="0.5"/>
         </svg>
     </div>
     <div class="topbar-meta">
@@ -389,16 +220,16 @@
         </div>
     </div>
     <div class="topbar-right">
-        <span class="ro-chip">Reviewer Hierarchy</span>
-        <a class="btn-topbar-back" id="btn-back" href="#">← Return to Index Map</a>
+        <span class="nav-context">Reviewer</span>
+        <a class="nav-sign-out" id="btn-back" href="#">← Return to Index</a>
     </div>
 </div>
 
 <div class="editor-shell">
 
     <aside class="left-sidebar" id="left-sidebar">
-        <div class="sidebar-section" id="sb-meta">
-            <span class="sidebar-section-label">Temporal Bounds</span>
+        <div class="sidebar-section-inner">
+            <span class="section-label" style="margin:0 0 12px">Temporal Bounds</span>
             <div class="sidebar-meta-field">
                 <label>Epoch Start</label>
                 <div class="meta-val-box" id="meta-start-display">—</div>
@@ -413,15 +244,15 @@
             </div>
         </div>
 
-        <div class="sidebar-section" id="sb-stats">
-            <span class="sidebar-section-label">Structural Metrics</span>
-            <div class="stat-row"><span class="stat-label">Lexicon Count</span><span class="stat-val" id="cnt-words">0</span></div>
-            <div class="stat-row"><span class="stat-label">Delta Span</span><span class="stat-val" id="cnt-span">—</span></div>
-            <div class="stat-row"><span class="stat-label">Archival Blocks</span><span class="stat-val" id="cnt-total">0</span></div>
-            <div class="stat-row"><span class="stat-label">Discrete Events</span><span class="stat-val" id="cnt-EVENT">0</span></div>
-            <div class="stat-row"><span class="stat-label">Eras Recorded</span><span class="stat-val" id="cnt-ERA">0</span></div>
-            <div class="stat-row"><span class="stat-label">Cultural Aspects</span><span class="stat-val" id="cnt-ASPECT">0</span></div>
-            <div class="stat-row"><span class="stat-label">Visual Plates</span><span class="stat-val" id="cnt-IMAGE">0</span></div>
+        <div class="sidebar-section-inner">
+            <span class="section-label" style="margin:0 0 10px">Structural Metrics</span>
+            <div class="stat-row"><span class="stat-label-sm">Word count</span><span class="stat-val-sm" id="cnt-words">0</span></div>
+            <div class="stat-row"><span class="stat-label-sm">Delta span</span><span class="stat-val-sm" id="cnt-span">—</span></div>
+            <div class="stat-row"><span class="stat-label-sm">Archival blocks</span><span class="stat-val-sm" id="cnt-total">0</span></div>
+            <div class="stat-row"><span class="stat-label-sm">Events</span><span class="stat-val-sm" id="cnt-EVENT">0</span></div>
+            <div class="stat-row"><span class="stat-label-sm">Eras</span><span class="stat-val-sm" id="cnt-ERA">0</span></div>
+            <div class="stat-row"><span class="stat-label-sm">Aspects</span><span class="stat-val-sm" id="cnt-ASPECT">0</span></div>
+            <div class="stat-row"><span class="stat-label-sm">Images</span><span class="stat-val-sm" id="cnt-IMAGE">0</span></div>
         </div>
     </aside>
 
@@ -429,63 +260,73 @@
         <div class="review-action-bar">
             <div class="action-bar-left">
                 <h4>Workflow Control</h4>
-                <p id="workflow-status-desc">Evaluate the verified entry blocks before committing them to the target timeline matrix.</p>
+                <p id="workflow-status-desc">Evaluate the entry before committing a decision.</p>
             </div>
             <div class="action-buttons-group">
-                <button class="btn-action btn-action--revision" id="btn-action-review">Submit Review Decision</button>
-                <button class="btn-action btn-action--publish" id="btn-action-publish">Link to Central</button>
+                <button class="decision-btn revise" id="btn-action-review">Submit Review Decision</button>
+                <button class="btn-submit" id="btn-action-publish">Link to Central</button>
             </div>
         </div>
 
         <div class="doc-paper" id="doc-paper">
-            <div class="entry-title-display" id="entry-title-display">Loading Chronograph Entry…</div>
+            <div class="entry-title-display" id="entry-title-display">Loading Entry…</div>
             <div class="entry-body" id="entry-body"></div>
         </div>
     </main>
 
 </div>
 
-<div class="modal-overlay hidden" id="publish-modal">
-    <div class="modal-card">
-        <h3 class="modal-title">Select Target Timeline</h3>
-        <p class="modal-desc">Assign this historical entry artifact to one of your active civilization models. This step commits the entry structural data to that target node's public registry.</p>
-
-        <div class="modal-select-wrapper">
-            <label for="modal-civ-select">Active Civilization Registries</label>
-            <select class="modal-select" id="modal-civ-select">
-                <option value="" disabled selected>Loading active nodes...</option>
-            </select>
+<!-- Publish modal -->
+<div class="modal-overlay" id="publish-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Select Target Timeline</h3>
+            <button class="modal-close" id="btn-modal-cancel">✕</button>
         </div>
-
-        <div class="modal-actions">
-            <button class="btn-modal btn-modal--cancel" id="btn-modal-cancel">Abort Assignment</button>
-            <button class="btn-modal btn-modal--confirm" id="btn-modal-confirm">Commit to Registry</button>
+        <div class="modal-body">
+            <p style="font-size:0.82rem;color:var(--faint);line-height:1.5">
+                Assign this historical entry to one of your active civilization models. This commits the entry to that node's public registry.
+            </p>
+            <div class="form-group">
+                <label for="modal-civ-select">Active Civilization Registries</label>
+                <select id="modal-civ-select">
+                    <option value="" disabled selected>Loading active nodes…</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" id="btn-modal-cancel-2">Abort</button>
+            <button class="btn-submit" id="btn-modal-confirm">Commit to Registry</button>
         </div>
     </div>
 </div>
 
-<div class="modal-overlay hidden" id="review-decision-modal">
-    <div class="modal-card">
-        <h3 class="modal-title">Submit Review Decision</h3>
-        <p class="modal-desc">Evaluate this entry and commit your review status to the source history timeline.</p>
-
-        <div class="modal-select-wrapper" style="margin-bottom:12px">
-            <label for="modal-status-select">Select Review Status</label>
-            <select class="modal-select" id="modal-status-select">
-                <option value="APPROVED">Approve Entry</option>
-                <option value="REJECTED">Reject Entry</option>
-                <option value="REVISION_REQUESTED">Request Revision</option>
-            </select>
+<!-- Review decision modal -->
+<div class="modal-overlay" id="review-decision-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Submit Review Decision</h3>
+            <button class="modal-close" id="btn-review-cancel-x">✕</button>
         </div>
-
-        <div class="modal-select-wrapper">
-            <label for="modal-review-note">Reviewer Evaluation Note</label>
-            <textarea class="modal-select" id="modal-review-note" placeholder="Provide an explanation for your decision (required for rejection/revision requests)..." style="min-height:90px;font-family:var(--sans);resize:vertical;"></textarea>
+        <div class="modal-body">
+            <p style="font-size:0.82rem;color:var(--faint);line-height:1.5">
+                Commit your review status to the source history timeline.
+            </p>
+            <div class="form-group">
+                <label for="modal-status-select">Review Status</label>
+                <select id="modal-status-select">
+                    <option value="REJECTED">Reject Entry</option>
+                    <option value="REVISION_REQUESTED">Request Revision</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="modal-review-note">Reviewer Note</label>
+                <textarea id="modal-review-note" placeholder="Provide an explanation for your decision (required for rejection / revision requests)…"></textarea>
+            </div>
         </div>
-
-        <div class="modal-actions" style="margin-top:16px">
-            <button class="btn-modal btn-modal--cancel" id="btn-review-cancel">Abort Decision</button>
-            <button class="btn-modal btn-modal--confirm" id="btn-review-confirm">Submit Decision</button>
+        <div class="modal-footer">
+            <button class="btn-cancel" id="btn-review-cancel">Abort</button>
+            <button class="btn-submit" id="btn-review-confirm">Submit Decision</button>
         </div>
     </div>
 </div>
@@ -493,9 +334,7 @@
 <div class="toast-container" id="toast-container"></div>
 
 <script type="module">
-    // Added placeholders for civilization querying/publishing functions to complete your architecture requirements
     import { isLoggedIn, getVersionDetail, getCentralCivilizationsForReviewer, markEntryForCentral, markEntry, getMyMarks } from './api.js';
-
 
     if (!isLoggedIn()) { window.location.href = 'login.html'; }
 
@@ -507,19 +346,15 @@
 
     if (!versionId || !nodeId) window.location.href = 'dashboard.html';
 
-    // Back link navigation setup
     const backUrl = `reviewer-civilization.html?versionId=${versionId}&civTitle=${encodeURIComponent(civTitle)}`;
     document.getElementById('btn-back').href = backUrl;
+    document.getElementById('bc-civ').textContent   = civTitle;
+    document.getElementById('bc-vol').textContent   = volTitle;
 
-    document.getElementById('bc-civ').textContent = civTitle;
-    document.getElementById('bc-vol').textContent = volTitle;
-
-    // Global layout states
     let initializedNodeData = null;
     const publishModal = document.getElementById('publish-modal');
     const civSelectDropdown = document.getElementById('modal-civ-select');
 
-    // ── Utils ──
     const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
     function formatYear(y) {
@@ -533,15 +368,9 @@
         t.className = `toast toast-${type}`;
         t.textContent = msg;
         c.appendChild(t);
-        setTimeout(() => {
-            t.style.opacity = '0';
-            t.style.transform = 'translateY(8px)';
-            t.style.transition = 'transform 0.2s, opacity 0.2s';
-            setTimeout(() => t.remove(), 200);
-        }, 4000);
+        setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.2s'; setTimeout(() => t.remove(), 200); }, 4000);
     }
 
-    // ── Find node in configuration tree ──
     function findNode(node, id) {
         if (!node) return null;
         if (node.nodeId === id) return node;
@@ -552,348 +381,225 @@
         return null;
     }
 
-    // ── Build citations section (Read-Only Engineering) ──
     function buildCitationsSection(citations) {
         const list = Array.isArray(citations) ? citations : [];
-        if (!list.length) {
-            return `<div class="an-citations-section">
-                    <div class="an-citations-header"><span class="an-citations-label">Source Assertions</span></div>
-                    <span class="an-citations-empty">No external verification strings anchored to this block.</span>
-                </div>`;
-        }
+        if (!list.length) return `<div class="an-citations-section"><span class="an-citations-label">Source Assertions</span><span class="an-citations-empty">No citations anchored to this block.</span></div>`;
         const items = list.map((c, i) => `
-                <div class="an-citation-item">
-                    <span class="an-citation-num">[${i + 1}]</span>
-                    <span class="an-citation-summary">
-                        ${c.author ? `<span class="cit-author">${esc(c.author)}</span>` : ''}
-                        ${c.source ? `<span class="cit-source">“${esc(c.source)}”</span>` : ''}
-                        ${c.year   ? `<span class="cit-year">(${esc(String(c.year))})</span>` : ''}
-                        ${c.quality ? `<span class="cit-quality cit-quality--${c.quality.toLowerCase()}">${esc(c.quality)}</span>` : ''}
-                        ${c.url    ? `<div class="an-cit-url"><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.url)}</a></div>` : ''}
-                    </span>
-                </div>`).join('');
-
-        return `<div class="an-citations-section">
-                <div class="an-citations-header"><span class="an-citations-label">Source Assertions</span></div>
-                ${items}
-            </div>`;
+            <div class="an-citation-item">
+                <span class="an-citation-num">[${i+1}]</span>
+                <span class="an-citation-summary">
+                    ${c.author ? `<span class="cit-author">${esc(c.author)}</span>` : ''}
+                    ${c.source ? `<span class="cit-source">"${esc(c.source)}"</span>` : ''}
+                    ${c.year   ? `<span class="cit-year">(${esc(String(c.year))})</span>` : ''}
+                    ${c.quality ? `<span class="cit-quality cit-quality--${c.quality.toLowerCase()}">${esc(c.quality)}</span>` : ''}
+                    ${c.url    ? `<div class="an-cit-url"><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.url)}</a></div>` : ''}
+                </span>
+            </div>`).join('');
+        return `<div class="an-citations-section"><span class="an-citations-label">Source Assertions</span>${items}</div>`;
     }
 
-    // ── Build block HTML (Technical Clean Layout) ──
     function buildBlockHTML(b) {
         const type = b.blockType || b.type || 'TEXT';
         const d    = b.data || {};
         const cits = b.citations || [];
-
-        if (type === 'TEXT') {
-            return d.html || '';
-        }
+        if (type === 'TEXT') return d.html || '';
 
         let bodyHTML = '';
         switch(type) {
             case 'EVENT':
-                bodyHTML = `
-                        <div class="an-two-col">
-                            <div class="an-field-group">
-                                <span class="an-field-label">Temporal Metric</span>
-                                <div class="an-field-val">${esc(d.date || '—')}</div>
-                            </div>
-                            <div class="an-field-group">
-                                <span class="an-field-label">Geospatial Coordinate</span>
-                                <div class="an-field-val">${esc(d.location || '—')}</div>
-                            </div>
-                        </div>
-                        ${d.description ? `<div class="an-description">${esc(d.description)}</div>` : ''}
-                        ${buildCitationsSection(cits)}`;
+                bodyHTML = `<div class="an-two-col">
+                    <div><span class="an-field-label">Date</span><div class="an-field-val">${esc(d.date||'—')}</div></div>
+                    <div><span class="an-field-label">Location</span><div class="an-field-val">${esc(d.location||'—')}</div></div>
+                </div>${d.description?`<div class="an-description">${esc(d.description)}</div>`:''}${buildCitationsSection(cits)}`;
                 break;
             case 'ERA':
-                bodyHTML = `
-                        <div class="an-two-col">
-                            <div class="an-field-group">
-                                <span class="an-field-label">Epoch Frontier</span>
-                                <div class="an-field-val">${esc(String(d.startYear || '—'))}</div>
-                            </div>
-                            <div class="an-field-group">
-                                <span class="an-field-label">Epoch Terminal</span>
-                                <div class="an-field-val">${esc(String(d.endYear || '—'))}</div>
-                            </div>
-                        </div>
-                        ${d.description ? `<div class="an-description">${esc(d.description)}</div>` : ''}
-                        <div class="an-era-bar"></div>
-                        ${buildCitationsSection(cits)}`;
+                bodyHTML = `<div class="an-two-col">
+                    <div><span class="an-field-label">Start</span><div class="an-field-val">${esc(String(d.startYear||'—'))}</div></div>
+                    <div><span class="an-field-label">End</span><div class="an-field-val">${esc(String(d.endYear||'—'))}</div></div>
+                </div>${d.description?`<div class="an-description">${esc(d.description)}</div>`:''}
+                <div class="an-era-bar"></div>${buildCitationsSection(cits)}`;
                 break;
             case 'ASPECT': {
                 const tags = Array.isArray(d.tags) ? d.tags : [];
-                bodyHTML = `
-                        ${d.description ? `<div class="an-description">${esc(d.description)}</div>` : ''}
-                        ${tags.length ? `<div class="an-tag-row">${tags.map(t => `<span class="an-tag">${esc(t)}</span>`).join('')}</div>` : ''}
-                        ${buildCitationsSection(cits)}`;
+                bodyHTML = `${d.description?`<div class="an-description">${esc(d.description)}</div>`:''}
+                ${tags.length?`<div class="an-tag-row">${tags.map(t=>`<span class="an-tag">${esc(t)}</span>`).join('')}</div>`:''}
+                ${buildCitationsSection(cits)}`;
                 break;
             }
             case 'IMAGE':
-                bodyHTML = `
-                        <div class="an-image-container">
-                            ${d.src ? `<img class="an-image-preview" src="${esc(d.src)}" alt="${esc(d.caption || '')}" />` : '<div style="padding:24px;text-align:center;color:var(--faint);font-family:var(--mono);font-size:.8rem">PLATE ARTIFACT MISSING</div>'}
-                            ${d.caption ? `<div class="an-image-caption">${esc(d.caption)}</div>` : ''}
-                        </div>
-                        ${buildCitationsSection(cits)}`;
+                bodyHTML = `<div class="an-image-container">
+                    ${d.src?`<img class="an-image-preview" src="${esc(d.src)}" alt="${esc(d.caption||'')}"/>`:'<div style="padding:24px;text-align:center;color:var(--faint);font-family:var(--mono);font-size:0.78rem">IMAGE MISSING</div>'}
+                    ${d.caption?`<div class="an-image-caption">${esc(d.caption)}</div>`:''}
+                </div>${buildCitationsSection(cits)}`;
                 break;
             default:
-                bodyHTML = `<div style="color:var(--rej-ink);font-family:var(--mono);font-size:.8rem">UNKNOWN RECORD STRUCTURE: ${esc(type)}</div>`;
+                bodyHTML = `<div style="color:var(--rej-ink);font-family:var(--mono);font-size:0.78rem">UNKNOWN TYPE: ${esc(type)}</div>`;
         }
-
-        return `
-                <div class="an-block" data-type="${esc(type)}">
-                    <div class="an-block-header">
-                        <span class="an-block-badge">${esc(type)}</span>
-                        ${d.title ? `<span class="an-block-title">${esc(d.title)}</span>` : ''}
-                    </div>
-                    <div class="an-block-body">${bodyHTML}</div>
-                </div>`;
+        return `<div class="an-block" data-type="${esc(type)}">
+            <div class="an-block-header">
+                <span class="an-block-badge">${esc(type)}</span>
+                ${d.title?`<span class="an-block-title">${esc(d.title)}</span>`:''}
+            </div>
+            <div class="an-block-body">${bodyHTML}</div>
+        </div>`;
     }
 
-    // ── Render all blocks into main reader surface ──
     function renderBlocks(blocks) {
         const body = document.getElementById('entry-body');
         if (!blocks || !blocks.length) {
-            body.innerHTML = '<p style="color:var(--faint);font-style:italic;text-align:center;padding:40px 0;">This entry contains zero structural content blocks.</p>';
+            body.innerHTML = '<p style="color:var(--faint);font-style:italic;text-align:center;padding:40px 0">No content blocks in this entry.</p>';
             return;
         }
         body.innerHTML = blocks.map(buildBlockHTML).join('');
     }
 
-    // ── Update structural statistics matrix ──
     function updateStats(title, blocks) {
-        const body     = document.getElementById('entry-body');
-        const rawText  = (title + ' ' + (body.textContent || '')).trim();
-        const words    = rawText.split(/\s+/).filter(Boolean).length;
+        const body    = document.getElementById('entry-body');
+        const rawText = (title + ' ' + (body.textContent || '')).trim();
+        const words   = rawText.split(/\s+/).filter(Boolean).length;
         document.getElementById('cnt-words').textContent = words.toLocaleString();
-
-        const typed = (type) => (blocks || []).filter(b => (b.blockType || b.type) === type).length;
-        const nonText = (blocks || []).filter(b => (b.blockType || b.type) !== 'TEXT');
+        const nonText = (blocks||[]).filter(b => (b.blockType||b.type) !== 'TEXT');
         document.getElementById('cnt-total').textContent = nonText.length;
-
         ['EVENT','ERA','ASPECT','IMAGE'].forEach(t =>
-            document.getElementById(`cnt-${t}`).textContent = typed(t)
+            document.getElementById(`cnt-${t}`).textContent = (blocks||[]).filter(b=>(b.blockType||b.type)===t).length
         );
     }
 
-    // ── Load entry sequence ──
     async function loadEntry() {
         try {
             const v = await getVersionDetail(versionId);
-            const tree = typeof v.serializedTree === 'string'
-                ? JSON.parse(v.serializedTree) : v.serializedTree;
-
+            const tree = typeof v.serializedTree === 'string' ? JSON.parse(v.serializedTree) : v.serializedTree;
             const node = findNode(tree, nodeId);
-            if (!node) { showToast('Entry signature mismatch across current version.', 'error'); return; }
+            if (!node) { showToast('Entry node not found.', 'error'); return; }
 
-            initializedNodeData = node; // Save system reference
-            const d = node.data || {};
-            const title  = d.title || 'Unnamed Entry Node';
+            initializedNodeData = node;
+            const d     = node.data || {};
+            const title = d.title || 'Unnamed Entry';
             const blocks = Array.isArray(d.blocks) ? d.blocks : [];
 
-            // Update text elements safely
             document.getElementById('entry-title-display').textContent = title;
-            document.getElementById('topbar-docname').textContent = title;
-            document.getElementById('bc-entry').textContent = title;
-            document.title = `${title} — AksharaNexus Evaluation Core`;
+            document.getElementById('topbar-docname').textContent      = title;
+            document.getElementById('bc-entry').textContent            = title;
+            document.title = `${title} — AksharaNexus`;
 
-            // Calculate bounds sidebars
-            const startY = d.startYear;
-            const endY   = d.endYear;
+            const startY = d.startYear, endY = d.endYear;
             document.getElementById('meta-start-display').textContent = startY != null ? formatYear(startY) : '—';
             document.getElementById('meta-end-display').textContent   = endY   != null ? formatYear(endY)   : '—';
 
-            const dateEl = document.getElementById('date-computed');
-            const spanEl = document.getElementById('cnt-span');
             if (startY != null && endY != null) {
-                dateEl.textContent = `${formatYear(startY)} – ${formatYear(endY)}`;
-                spanEl.textContent = `${Math.abs(endY - startY).toLocaleString()} Yrs`;
+                document.getElementById('date-computed').textContent = `${formatYear(startY)} – ${formatYear(endY)}`;
+                document.getElementById('cnt-span').textContent      = `${Math.abs(endY-startY).toLocaleString()} yrs`;
             } else {
-                dateEl.textContent = 'Indeterminate Frontier';
-                spanEl.textContent = '—';
+                document.getElementById('date-computed').textContent = 'Indeterminate';
+                document.getElementById('cnt-span').textContent      = '—';
             }
 
             renderBlocks(blocks);
             updateStats(title, blocks);
 
-            // Fetch and display review status
             try {
                 const marks = await getMyMarks();
-                const matchingMark = marks.find(m => m.versionId === versionId && m.nodeId === nodeId);
+                const mark  = marks.find(m => m.versionId === versionId && m.nodeId === nodeId);
                 const statusDescEl = document.getElementById('workflow-status-desc');
-                if (matchingMark) {
-                    const statusText = matchingMark.markStatus.replace(/_/g, ' ');
-                    const noteText = matchingMark.reviewerNote ? ` (Note: "${matchingMark.reviewerNote}")` : '';
-                    statusDescEl.innerHTML = `Current Status: <strong class="status-badge status-${matchingMark.markStatus}">${statusText}</strong>${noteText}`;
+                if (mark) {
+                    const st = mark.markStatus.replace(/_/g,' ');
+                    const note = mark.reviewerNote ? ` — "${mark.reviewerNote}"` : '';
+                    statusDescEl.innerHTML = `Status: <strong class="status-badge status-${mark.markStatus}">${st}</strong>${note}`;
                 } else {
-                    statusDescEl.innerHTML = `Current Status: <strong>UNREVIEWED</strong>. Evaluate the verified entry blocks before committing them to the target timeline matrix.`;
+                    statusDescEl.textContent = 'Status: UNREVIEWED — evaluate the entry before committing a decision.';
                 }
-            } catch (err) {
-                console.error("Failed to load review marks", err);
-            }
+            } catch(e) { console.error('Failed to load marks', e); }
 
             setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), 200);
         } catch(err) {
-            showToast(err.message || 'Failed to successfully resolve entry matrix.', 'error');
+            showToast(err.message || 'Failed to resolve entry.', 'error');
             document.getElementById('loading-overlay').classList.add('hidden');
         }
     }
 
-    // ── Action Buttons Logic ──
-
-    // ── Action Buttons Logic ──
-
-    const reviewModal = document.getElementById('review-decision-modal');
-    const statusSelect = document.getElementById('modal-status-select');
+    // ── Review decision modal ──
+    const reviewModal   = document.getElementById('review-decision-modal');
+    const statusSelect  = document.getElementById('modal-status-select');
     const reviewNoteInput = document.getElementById('modal-review-note');
 
-    // 1. Submit Review Decision Modal Opening
     document.getElementById('btn-action-review').addEventListener('click', () => {
-        reviewModal.classList.remove('hidden');
+        reviewModal.classList.add('open');
     });
+    document.getElementById('btn-review-cancel').addEventListener('click', () => reviewModal.classList.remove('open'));
+    document.getElementById('btn-review-cancel-x').addEventListener('click', () => reviewModal.classList.remove('open'));
+    reviewModal.addEventListener('click', e => { if (e.target === reviewModal) reviewModal.classList.remove('open'); });
 
-    // Close review modal
-    document.getElementById('btn-review-cancel').addEventListener('click', () => {
-        reviewModal.classList.add('hidden');
-    });
-    reviewModal.addEventListener('click', (e) => {
-        if (e.target === reviewModal) reviewModal.classList.add('hidden');
-    });
-
-    // Confirm review decision
     document.getElementById('btn-review-confirm').addEventListener('click', async () => {
         const status = statusSelect.value;
-        const note = reviewNoteInput.value.trim();
-
+        const note   = reviewNoteInput.value.trim();
         if ((status === 'REJECTED' || status === 'REVISION_REQUESTED') && !note) {
-            showToast('A note is required for rejections and revision requests', 'error');
-            return;
+            showToast('A note is required for rejections and revision requests.', 'error'); return;
         }
-
         const confirmBtn = document.getElementById('btn-review-confirm');
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = 'Submitting...';
-
-        const payloadDTO = {
-            versionId: versionId,
-            nodeId: nodeId,
-            entryTitle: document.getElementById('entry-title-display').textContent || 'Unnamed Entry Node',
-            markStatus: status,
-            reviewerNote: note
-        };
-
+        confirmBtn.disabled = true; confirmBtn.textContent = 'Submitting…';
         try {
-            await markEntry(payloadDTO);
-            showToast(`Success: Review decision submitted as ${status.replace(/_/g, ' ')}.`, 'success');
-            reviewModal.classList.add('hidden');
-            
-            // Update UI dynamically
-            const statusDescEl = document.getElementById('workflow-status-desc');
-            const statusText = status.replace(/_/g, ' ');
-            const noteText = note ? ` (Note: "${note}")` : '';
-            statusDescEl.innerHTML = `Current Status: <strong class="status-badge status-${status}">${statusText}</strong>${noteText}`;
-        } catch (err) {
-            showToast(err.message || 'Error submitting review decision.', 'error');
+            await markEntry({ versionId, nodeId, entryTitle: document.getElementById('entry-title-display').textContent, markStatus: status, reviewerNote: note });
+            showToast(`Decision submitted: ${status.replace(/_/g,' ')}`, 'success');
+            reviewModal.classList.remove('open');
+            const st = status.replace(/_/g,' ');
+            const noteText = note ? ` — "${note}"` : '';
+            document.getElementById('workflow-status-desc').innerHTML = `Status: <strong class="status-badge status-${status}">${st}</strong>${noteText}`;
+        } catch(err) {
+            showToast(err.message || 'Error submitting decision.', 'error');
         } finally {
-            confirmBtn.disabled = false;
-            confirmBtn.textContent = 'Submit Decision';
+            confirmBtn.disabled = false; confirmBtn.textContent = 'Submit Decision';
         }
     });
 
-    // 2. Open Publishing Allocation Modal
+    // ── Publish modal ──
     document.getElementById('btn-action-publish').addEventListener('click', async () => {
-        publishModal.classList.remove('hidden');
-        civSelectDropdown.innerHTML = '<option value="" disabled selected>Querying timeline nodes...</option>';
-
+        publishModal.classList.add('open');
+        civSelectDropdown.innerHTML = '<option value="" disabled selected>Querying timeline nodes…</option>';
         try {
-            // Fetch the list of civilizations created via dashboard
             const civilizations = await getCentralCivilizationsForReviewer();
-
             if (!civilizations || civilizations.length === 0) {
-                civSelectDropdown.innerHTML = '<option value="" disabled>No active civilization timelines found</option>';
-                return;
+                civSelectDropdown.innerHTML = '<option value="" disabled>No active civilization timelines found</option>'; return;
             }
-
-            civSelectDropdown.innerHTML = '<option value="" disabled selected>Select matching active timeline matrix...</option>';
+            civSelectDropdown.innerHTML = '<option value="" disabled selected>Select matching timeline…</option>';
             civilizations.forEach(civ => {
                 const opt = document.createElement('option');
-
-                // FIX: Map strictly to centralCivId matching your Spring Backend DTO setup
                 opt.value = civ.centralCivId;
-
-                // Securely fall back for display names depending on serialization preferences
                 opt.textContent = civ.title || civ.name || 'Unnamed Civilization';
                 civSelectDropdown.appendChild(opt);
             });
-        } catch (err) {
-            showToast('Failed to fetch civilization registry items.', 'error');
-            civSelectDropdown.innerHTML = '<option value="" disabled>Failed to resolve registry options</option>';
+        } catch(err) {
+            showToast('Failed to fetch civilization registries.', 'error');
+            civSelectDropdown.innerHTML = '<option value="" disabled>Failed to load options</option>';
         }
     });
 
-    // 3. Modal Confirm Publishing Interaction
     document.getElementById('btn-modal-confirm').addEventListener('click', async () => {
         const targetCivId = civSelectDropdown.value;
-        if (!targetCivId) {
-            showToast('Please allocate a target civilization matrix before committing.', 'error');
-            return;
-        }
-
+        if (!targetCivId) { showToast('Please select a target civilization.', 'error'); return; }
         const targetCivName = civSelectDropdown.options[civSelectDropdown.selectedIndex].text;
         const confirmBtn = document.getElementById('btn-modal-confirm');
-
-        // Safely extract the title text that we already loaded into the DOM layout
-        const extractedTitle = document.getElementById('entry-title-display').textContent || 'Unnamed Entry Node';
-
-        // Prevent rapid double-clicks while network requests process
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = 'Publishing...';
-
-        // Pack the parameters into a clean DTO layout matching your Spring Boot backend structure
-        const payloadDTO = {
-            centralCivId: targetCivId,
-            versionId: versionId,
-            nodeId: nodeId,
-            entryTitle: extractedTitle // <--- Passing the title seamlessly here!
-        };
-
+        const extractedTitle = document.getElementById('entry-title-display').textContent || 'Unnamed Entry';
+        confirmBtn.disabled = true; confirmBtn.textContent = 'Publishing…';
         try {
-            // Check the reference of your imported method safely without running it
-            if (typeof markEntryForCentral  === 'function') {
-                // Pass the single DTO object container directly to the API
-                await markEntryForCentral(payloadDTO);
+            if (typeof markEntryForCentral === 'function') {
+                await markEntryForCentral({ centralCivId: targetCivId, versionId, nodeId, entryTitle: extractedTitle });
             } else {
-                throw new Error("API compilation missing: publishEntryToCentral target unresolved.");
+                throw new Error('API method markEntryForCentral not available.');
             }
-
-            showToast(`Success: Content verified and deployed into the registry of "${targetCivName}".`, 'success');
-            publishModal.classList.add('hidden');
-            
-            // Update UI dynamically
-            const statusDescEl = document.getElementById('workflow-status-desc');
-            statusDescEl.innerHTML = `Current Status: <strong class="status-badge status-APPROVED">APPROVED</strong> (Note: "Published explicitly into Central Registry Timeline matrix.")`;
-        } catch (err) {
-            showToast(err.message || 'Error executing publishing block deployment.', 'error');
+            showToast(`Published into registry of "${targetCivName}".`, 'success');
+            publishModal.classList.remove('open');
+            document.getElementById('workflow-status-desc').innerHTML = `Status: <strong class="status-badge status-PUBLISHED">PUBLISHED</strong> — committed to central registry.`;
+        } catch(err) {
+            showToast(err.message || 'Error publishing entry.', 'error');
         } finally {
-            // Restore button usability state
-            confirmBtn.disabled = false;
-            confirmBtn.textContent = 'Confirm & Publish';
+            confirmBtn.disabled = false; confirmBtn.textContent = 'Commit to Registry';
         }
     });
 
-    // 4. Close Modal
-    document.getElementById('btn-modal-cancel').addEventListener('click', () => {
-        publishModal.classList.add('hidden');
-    });
+    document.getElementById('btn-modal-cancel').addEventListener('click',   () => publishModal.classList.remove('open'));
+    document.getElementById('btn-modal-cancel-2').addEventListener('click', () => publishModal.classList.remove('open'));
+    publishModal.addEventListener('click', e => { if (e.target === publishModal) publishModal.classList.remove('open'); });
 
-    // Close modal on tracking backdrop touch escape
-    publishModal.addEventListener('click', (e) => {
-        if (e.target === publishModal) publishModal.classList.add('hidden');
-    });
-
-    // Initialize Engine
     loadEntry();
 </script>
 </body>
