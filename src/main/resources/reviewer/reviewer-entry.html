@@ -333,6 +333,32 @@
         .toast-error { background: var(--rej-bg); border: 1px solid var(--rej-border); color: var(--rej-ink); }
         .toast-success { background: var(--pub-bg); border: 1px solid var(--pub-border); color: var(--pub-ink); }
         .toast-info  { background: #fff; border: 1px solid var(--border); color: var(--ink); }
+        .status-badge {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: .75rem;
+            letter-spacing: .05em;
+            padding: 3px 8px;
+            border-radius: 3px;
+            white-space: nowrap;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .status-APPROVED {
+            background: var(--pub-bg);
+            color: var(--pub-ink);
+            border: 1px solid var(--pub-border);
+        }
+        .status-REJECTED {
+            background: var(--rej-bg);
+            color: var(--rej-ink);
+            border: 1px solid var(--rej-border);
+        }
+        .status-REVISION_REQUESTED {
+            background: #fff8e6;
+            color: #a06000;
+            border: 1px solid #f5deb3;
+        }
     </style>
 </head>
 <body>
@@ -403,11 +429,11 @@
         <div class="review-action-bar">
             <div class="action-bar-left">
                 <h4>Workflow Control</h4>
-                <p>Evaluate the verified entry blocks before committing them to the target timeline matrix.</p>
+                <p id="workflow-status-desc">Evaluate the verified entry blocks before committing them to the target timeline matrix.</p>
             </div>
             <div class="action-buttons-group">
-                <button class="btn-action btn-action--revision" id="btn-action-revision">Request Formal Revision</button>
-                <button class="btn-action btn-action--publish" id="btn-action-publish">Mark for Publishing</button>
+                <button class="btn-action btn-action--revision" id="btn-action-review">Submit Review Decision</button>
+                <button class="btn-action btn-action--publish" id="btn-action-publish">Link to Central</button>
             </div>
         </div>
 
@@ -438,11 +464,37 @@
     </div>
 </div>
 
+<div class="modal-overlay hidden" id="review-decision-modal">
+    <div class="modal-card">
+        <h3 class="modal-title">Submit Review Decision</h3>
+        <p class="modal-desc">Evaluate this entry and commit your review status to the source history timeline.</p>
+
+        <div class="modal-select-wrapper" style="margin-bottom:12px">
+            <label for="modal-status-select">Select Review Status</label>
+            <select class="modal-select" id="modal-status-select">
+                <option value="APPROVED">Approve Entry</option>
+                <option value="REJECTED">Reject Entry</option>
+                <option value="REVISION_REQUESTED">Request Revision</option>
+            </select>
+        </div>
+
+        <div class="modal-select-wrapper">
+            <label for="modal-review-note">Reviewer Evaluation Note</label>
+            <textarea class="modal-select" id="modal-review-note" placeholder="Provide an explanation for your decision (required for rejection/revision requests)..." style="min-height:90px;font-family:var(--sans);resize:vertical;"></textarea>
+        </div>
+
+        <div class="modal-actions" style="margin-top:16px">
+            <button class="btn-modal btn-modal--cancel" id="btn-review-cancel">Abort Decision</button>
+            <button class="btn-modal btn-modal--confirm" id="btn-review-confirm">Submit Decision</button>
+        </div>
+    </div>
+</div>
+
 <div class="toast-container" id="toast-container"></div>
 
 <script type="module">
     // Added placeholders for civilization querying/publishing functions to complete your architecture requirements
-    import { isLoggedIn, getVersionDetail, getCentralCivilizationsForReviewer,markEntryForCentral } from './api.js';
+    import { isLoggedIn, getVersionDetail, getCentralCivilizationsForReviewer, markEntryForCentral, markEntry, getMyMarks } from './api.js';
 
 
     if (!isLoggedIn()) { window.location.href = 'login.html'; }
@@ -666,6 +718,22 @@
             renderBlocks(blocks);
             updateStats(title, blocks);
 
+            // Fetch and display review status
+            try {
+                const marks = await getMyMarks();
+                const matchingMark = marks.find(m => m.versionId === versionId && m.nodeId === nodeId);
+                const statusDescEl = document.getElementById('workflow-status-desc');
+                if (matchingMark) {
+                    const statusText = matchingMark.markStatus.replace(/_/g, ' ');
+                    const noteText = matchingMark.reviewerNote ? ` (Note: "${matchingMark.reviewerNote}")` : '';
+                    statusDescEl.innerHTML = `Current Status: <strong class="status-badge status-${matchingMark.markStatus}">${statusText}</strong>${noteText}`;
+                } else {
+                    statusDescEl.innerHTML = `Current Status: <strong>UNREVIEWED</strong>. Evaluate the verified entry blocks before committing them to the target timeline matrix.`;
+                }
+            } catch (err) {
+                console.error("Failed to load review marks", err);
+            }
+
             setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), 200);
         } catch(err) {
             showToast(err.message || 'Failed to successfully resolve entry matrix.', 'error');
@@ -675,20 +743,62 @@
 
     // ── Action Buttons Logic ──
 
-    // 1. Revision Interaction Flow
-    document.getElementById('btn-action-revision').addEventListener('click', async () => {
-        const assurance = confirm("Are you sure you want to flag this version context and issue a formal revision request to the compiler author?");
-        if (!assurance) return;
+    // ── Action Buttons Logic ──
+
+    const reviewModal = document.getElementById('review-decision-modal');
+    const statusSelect = document.getElementById('modal-status-select');
+    const reviewNoteInput = document.getElementById('modal-review-note');
+
+    // 1. Submit Review Decision Modal Opening
+    document.getElementById('btn-action-review').addEventListener('click', () => {
+        reviewModal.classList.remove('hidden');
+    });
+
+    // Close review modal
+    document.getElementById('btn-review-cancel').addEventListener('click', () => {
+        reviewModal.classList.add('hidden');
+    });
+    reviewModal.addEventListener('click', (e) => {
+        if (e.target === reviewModal) reviewModal.classList.add('hidden');
+    });
+
+    // Confirm review decision
+    document.getElementById('btn-review-confirm').addEventListener('click', async () => {
+        const status = statusSelect.value;
+        const note = reviewNoteInput.value.trim();
+
+        if ((status === 'REJECTED' || status === 'REVISION_REQUESTED') && !note) {
+            showToast('A note is required for rejections and revision requests', 'error');
+            return;
+        }
+
+        const confirmBtn = document.getElementById('btn-review-confirm');
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Submitting...';
+
+        const payloadDTO = {
+            versionId: versionId,
+            nodeId: nodeId,
+            entryTitle: document.getElementById('entry-title-display').textContent || 'Unnamed Entry Node',
+            markStatus: status,
+            reviewerNote: note
+        };
 
         try {
-            if (typeof requestFormalRevision === 'function') {
-                await requestFormalRevision(nodeId, versionId);
-                showToast('Formal revision requested. Entry context bounced back to editor workflow.', 'info');
-            } else {
-                showToast('API requestFormalRevision hook missing. Revision simulated successfully.', 'info');
-            }
+            await markEntry(payloadDTO);
+            showToast(`Success: Review decision submitted as ${status.replace(/_/g, ' ')}.`, 'success');
+            reviewModal.classList.add('hidden');
+            
+            // Update UI dynamically
+            const statusDescEl = document.getElementById('workflow-status-desc');
+            const statusText = status.replace(/_/g, ' ');
+            const noteText = note ? ` (Note: "${note}")` : '';
+            statusDescEl.innerHTML = `Current Status: <strong class="status-badge status-${status}">${statusText}</strong>${noteText}`;
         } catch (err) {
-            showToast(err.message || 'Error processing revision deployment.', 'error');
+            showToast(err.message || 'Error submitting review decision.', 'error');
+        } finally {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Submit Decision';
         }
     });
 
@@ -723,8 +833,6 @@
         }
     });
 
-    // 3. Modal Confirm Publishing Interaction
-    // 3. Modal Confirm Publishing Interaction
     // 3. Modal Confirm Publishing Interaction
     document.getElementById('btn-modal-confirm').addEventListener('click', async () => {
         const targetCivId = civSelectDropdown.value;
@@ -762,6 +870,10 @@
 
             showToast(`Success: Content verified and deployed into the registry of "${targetCivName}".`, 'success');
             publishModal.classList.add('hidden');
+            
+            // Update UI dynamically
+            const statusDescEl = document.getElementById('workflow-status-desc');
+            statusDescEl.innerHTML = `Current Status: <strong class="status-badge status-APPROVED">APPROVED</strong> (Note: "Published explicitly into Central Registry Timeline matrix.")`;
         } catch (err) {
             showToast(err.message || 'Error executing publishing block deployment.', 'error');
         } finally {

@@ -86,5 +86,5 @@ export const getCentralCivilizationsForReviewer = ()          => req('GET',  '/r
 // Add this inside your './api.js' file
 export const markEntryForCentral = (dto) => req('POST', '/reviewer/entry/mark-for-central', dto);
 // ── Wikidata ──────────────────────────────────────────────────────────────
-// ── Change this line inside api.js ──────────────────────────────────────────
 export const getCivMetadata = (title) => req('GET', `/reviewer/central/civ-metadata?title=${encodeURIComponent(title)}`);
+export const getVersionMarks = (versionId) => req('GET', `/reviewer/version/${versionId}/marks`);

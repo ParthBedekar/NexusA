@@ -1,10 +1,10 @@
-// ── AksharaNexus Reviewer Dashboard Engine ────────────────────────────────
 import {
     isLoggedIn, logout,
     getAllLatestVersions,
     getMyMarks, markEntry,
     getCentralCivilizations, getCentralDetail,
-    createCentralCivilization, addVolume, addEntry, flagDivergence
+    createCentralCivilization, addVolume, addEntry, flagDivergence,
+    getCivMetadata
 } from './api.js';
 
 // ── Auth Guard ────────────────────────────────────────────────────────────
@@ -17,6 +17,7 @@ let currentCivTitle             = '';    // Tracks open context for target compi
 let currentVolId                = null;
 let approvedMarks               = [];
 let selectedEntriesForDivergence = [];   // Track entries selected for conflict marking
+let selectedCivMetadata         = null;
 
 // ── JWT Payload Extraction ────────────────────────────────────────────────
 function decodeJwt(token) {
@@ -487,19 +488,84 @@ document.getElementById('btn-submit-entry').addEventListener('click', async () =
 });
 
 // ── Central Civilization Generation ──────────────────────────────────────
-document.getElementById('btn-new-civ').addEventListener('click', () => openModal('modal-new-civ'));
+let searchTimeout = null;
+const searchInput = document.getElementById('new-civ-search');
+const pickerEl = document.getElementById('civ-metadata-picker');
+
+// Reset states on new civ button click
+document.getElementById('btn-new-civ').addEventListener('click', () => {
+    searchInput.value = '';
+    pickerEl.innerHTML = '';
+    pickerEl.style.display = 'none';
+    selectedCivMetadata = null;
+    openModal('modal-new-civ');
+});
+
+searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    const query = searchInput.value.trim();
+    if (!query) {
+        pickerEl.innerHTML = '';
+        pickerEl.style.display = 'none';
+        selectedCivMetadata = null;
+        return;
+    }
+    searchTimeout = setTimeout(async () => {
+        try {
+            pickerEl.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--faint);">Searching university records...</div>';
+            pickerEl.style.display = 'block';
+            
+            const results = await getCivMetadata(query);
+            if (!results || results.length === 0) {
+                pickerEl.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--faint); font-size: 0.85rem;">No matching university submissions found for "${query}"</div>`;
+                selectedCivMetadata = null;
+                return;
+            }
+            
+            pickerEl.innerHTML = `
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--faint); font-weight: 500; margin-bottom: 8px; font-family: var(--mono);">Select University Source Version</div>
+                <div class="metadata-card-grid">
+                    ${results.map((r, idx) => `
+                        <div class="metadata-card" data-idx="${idx}">
+                            <div class="metadata-card-header">
+                                <span class="metadata-card-uni">${r.universityName || 'Unknown University'}</span>
+                                <span class="metadata-card-years">${formatYear(r.startYear)} – ${formatYear(r.endYear)}</span>
+                            </div>
+                            <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; color: var(--ink);">${r.title}</div>
+                            <p class="metadata-card-desc">${r.description || '<em>No description provided.</em>'}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            // Add click listener to cards
+            pickerEl.querySelectorAll('.metadata-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    pickerEl.querySelectorAll('.metadata-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    const idx = parseInt(card.dataset.idx, 10);
+                    selectedCivMetadata = results[idx];
+                });
+            });
+            
+        } catch (e) {
+            pickerEl.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--rej-ink); font-size: 0.85rem;">Failed to fetch records: ${e.message}</div>`;
+            selectedCivMetadata = null;
+        }
+    }, 300);
+});
 
 document.getElementById('btn-submit-new-civ').addEventListener('click', async () => {
-    const titleField = document.getElementById('new-civ-title');
-    const titleValue = titleField ? titleField.value.trim() : '';
-
-    if (!titleValue) {
-        toast('Civilization title is required', 'error');
+    if (!selectedCivMetadata) {
+        toast('Please select a university source card first', 'error');
         return;
     }
 
     const dto = {
-        title: titleValue
+        title: selectedCivMetadata.title,
+        description: selectedCivMetadata.description,
+        startYear: selectedCivMetadata.startYear,
+        endYear: selectedCivMetadata.endYear
     };
 
     const btn = document.getElementById('btn-submit-new-civ');
@@ -508,11 +574,10 @@ document.getElementById('btn-submit-new-civ').addEventListener('click', async ()
 
     try {
         await createCentralCivilization(dto);
-        toast('Standardized System Node Generated', 'success');
+        toast('Standardized Central Civilization Generated', 'success');
         closeModal('modal-new-civ');
         showView('central');
         loadCentral();
-        if (titleField) titleField.value = '';
     } catch (e) {
         toast(e.message, 'error');
     } finally {

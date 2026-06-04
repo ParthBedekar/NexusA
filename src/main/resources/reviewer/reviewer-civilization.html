@@ -204,6 +204,29 @@
         .status-DRAFT             { background: var(--warm);   color: var(--muted); }
         .status-REVISION_REQUESTED { background: #fff8e6; color: #a06000; }
 
+        .tree-status-badge {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 8px;
+            font-weight: 500;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+        .tree-status-badge.APPROVED {
+            background: var(--pub-bg);
+            color: var(--pub-ink);
+        }
+        .tree-status-badge.REJECTED {
+            background: var(--rej-bg);
+            color: var(--rej-ink);
+        }
+        .tree-status-badge.REVISION_REQUESTED {
+            background: #fff8e6;
+            color: #a06000;
+        }
+
         /* ── Empty / Skeleton ── */
         .empty-state {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -281,8 +304,10 @@
 <script type="module">
     import {
         isLoggedIn, getReviewerEmail,
-        getVersionDetail
+        getVersionDetail, getVersionMarks
     } from './api.js';
+
+    const versionMarksMap = new Map();
 
     if (!isLoggedIn()) { window.location.href = 'login.html'; }
 
@@ -314,7 +339,18 @@
             return;
         }
         try {
-            const v = await getVersionDetail(versionId);
+            const [v, marks] = await Promise.all([
+                getVersionDetail(versionId),
+                getVersionMarks(versionId).catch(() => [])
+            ]);
+
+            if (marks && Array.isArray(marks)) {
+                marks.forEach(m => {
+                    if (m.nodeId) {
+                        versionMarksMap.set(m.nodeId, m.markStatus);
+                    }
+                });
+            }
 
             if (v.civTitle) {
                 document.getElementById('nav-civ-name').textContent = v.civTitle;
@@ -422,8 +458,15 @@
         const volTitleEnc = encodeURIComponent(parentData?.title || d.title || '');
         const entryUrl    = `reviewer-entry.html?versionId=${version?.versionId}&nodeId=${node.nodeId}&civTitle=${civTitleEnc}&volTitle=${volTitleEnc}`;
 
+        const status = versionMarksMap.get(node.nodeId);
+        let statusBadgeHtml = '';
+        if (status) {
+            let statusText = status.replace(/_/g, ' ');
+            statusBadgeHtml = `<span class="tree-status-badge ${status}" title="Review status: ${statusText}">${statusText}</span>`;
+        }
+
         const labelHtml = isEntry
-            ? `<span class="tree-node-label entry-label" onclick="window.location.href='${entryUrl}'">${d.title || 'Untitled Node'}</span>`
+            ? `<span class="tree-node-label entry-label" onclick="window.location.href='${entryUrl}'">${d.title || 'Untitled Node'}</span>${statusBadgeHtml}`
             : `<span class="tree-node-label">${d.title || 'Untitled Structure'}</span>`;
 
         const childrenHtml = hasChildren
